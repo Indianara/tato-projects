@@ -4,7 +4,7 @@ __pycache__/
 .env
 cache/
 output/
-docs/
+docs/output/
 .DS_Store
 *.egg-info/
 
