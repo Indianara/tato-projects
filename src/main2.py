@@ -280,7 +280,8 @@ def mostrar_versao():
             ["git", "log", "-1", "--format=%h"], capture_output=True, text=True, cwd=BASE
         ).stdout.strip()
         data_commit = subprocess.run(
-            ["git", "log", "-1", "--format=%ad", "--date=short"], capture_output=True, text=True, cwd=BASE
+            ["git", "log", "-1", "--format=%ad %H:%M", "--date=short"],
+            capture_output=True, text=True, cwd=BASE
         ).stdout.strip()
         data_pub = subprocess.run(
             ["git", "log", "-1", "--grep=publicar dashboard", "--format=%ad %H:%M", "--date=short"],
@@ -290,7 +291,7 @@ def mostrar_versao():
         hash_, data_commit, data_pub = "", "", ""
 
     print(f"  Versão:     {hash_ or 'N/A'} ({data_commit or 'N/A'})")
-    print(f"  Última pub: {data_pub or 'N/A'}")
+    print(f"  Publicado:  {data_pub or 'N/A'}")
     print("=" * 60)
 
 

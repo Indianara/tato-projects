@@ -17,10 +17,10 @@ echo "=============================================="
 echo "    Prestador Mais Proximo"
 echo "=============================================="
 HASH=$(git log -1 --format=%h 2>/dev/null || echo "N/A")
-DATA=$(git log -1 --format=%ad --date=short 2>/dev/null || echo "N/A")
+DATA=$(git log -1 --format="%ad %H:%M" --date=short 2>/dev/null || echo "N/A")
 PUB=$(git log -1 --grep="publicar dashboard" --format="%ad %H:%M" --date=short 2>/dev/null || echo "N/A")
 echo "  Versao:     $HASH ($DATA)"
-echo "  Ultima pub: $PUB"
+echo "  Publicado:  $PUB"
 echo "=============================================="
 echo ""
 
