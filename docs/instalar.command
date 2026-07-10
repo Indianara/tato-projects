@@ -51,7 +51,78 @@ if ! command -v git &>/dev/null; then
     exit 1
 fi
 
+# ── Garantir autenticação GitHub ──────────────────
+ensure_github_auth() {
+    if git ls-remote "$REPO_URL" &>/dev/null; then
+        return 0
+    fi
+
+    echo ""
+    echo "=============================================="
+    echo "  ACESSO NEGADO AO REPOSITORIO (403)"
+    echo "=============================================="
+    echo ""
+    echo "Este repositorio e privado e requer login no GitHub."
+    echo ""
+
+    if command -v gh &>/dev/null; then
+        if gh auth status &>/dev/null; then
+            ok "GitHub ja autenticado"
+            return 0
+        fi
+    else
+        echo "Instalando GitHub CLI..."
+        if command -v brew &>/dev/null; then
+            brew install gh 2>/dev/null || true
+        fi
+
+        if ! command -v gh &>/dev/null; then
+            GH_VERSION=$(curl -sL "https://api.github.com/repos/cli/cli/releases/latest" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['tag_name'].lstrip('v'))" 2>/dev/null || echo "2.55.0")
+            ARCH=$(uname -m)
+            if [[ "$ARCH" == "arm64" ]]; then
+                GH_URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_macOS_arm64.pkg"
+            else
+                GH_URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_macOS_amd64.pkg"
+            fi
+
+            echo "  Baixando $GH_URL ..."
+            curl -sL -o /tmp/gh.pkg "$GH_URL" || {
+                echo ""
+                echo "  ERRO: Falha ao baixar. Verifique sua internet."
+                read -p "  Pressione Enter para fechar..."
+                exit 1
+            }
+            echo "  Instalando (pode solicitar sua senha)..."
+            sudo installer -pkg /tmp/gh.pkg -target / 2>/dev/null || true
+        fi
+    fi
+
+    if ! command -v gh &>/dev/null; then
+        echo ""
+        echo "  ERRO: Nao foi possivel instalar o GitHub CLI."
+        echo "  Instale manualmente em: https://cli.github.com/"
+        read -p "  Pressione Enter apos instalar..."
+        exit 1
+    fi
+
+    echo ""
+    echo "Abrindo navegador para login no GitHub..."
+    echo "Siga as instrucoes no navegador e depois volte aqui."
+    echo ""
+    gh auth login --web || {
+        echo ""
+        echo "  ERRO: Login nao realizado."
+        read -p "  Pressione Enter para fechar..."
+        exit 1
+    }
+    echo ""
+    ok "Login GitHub realizado com sucesso!"
+}
+
 # ── Clonar / Atualizar repositório ───────────────
+info "Verificando acesso ao GitHub..."
+ensure_github_auth
+
 info "Baixando o projeto..."
 
 if [[ -d "$REPO_DIR" ]]; then
