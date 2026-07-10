@@ -590,8 +590,121 @@ These rules must be preserved in any and every modification. A change that viola
 - The map container IDs must remain `#stateMapView` and `#providerChart`. These IDs are referenced by both CSS and JavaScript throughout the file.
 
 
-# Como rodar a main:
-/Users/indianarasantos/Documents/Developments/Extensions/PrestadorMaisProximo/.venv/bin/python3" "/Users/indianarasantos/Documents/Developments/Extensions/PrestadorMaisProximo/main.py
+# Como usar
 
-Local server 
-.venv/bin/python3 -m http.server 8000
+## Rodar o pipeline
+
+### Opção 1 — Dois cliques (recomendado)
+1. Abra a pasta do projeto no Finder
+2. Dê dois cliques em `rodar.command`
+3. O Terminal abre, arraste o XLSX e pronto
+
+### Opção 2 — Pelo terminal
+```bash
+source .venv/bin/activate
+python3 src/main2.py
+```
+
+### Opção 3 — De qualquer lugar (uma linha)
+```bash
+curl -fsSL https://raw.githubusercontent.com/Indianara/tato-projects/main/install.sh | bash -s -- /caminho/planilha.xlsx
+```
+
+---
+
+# Como fazer alterações no código e atualizar o GitHub
+
+Você é dona do repositório, então pode escolher entre **push direto** (mais simples) ou **Pull Request** (mais seguro).
+
+## Método 1 — Push direto (simples, sem PR)
+
+Use quando for uma alteração rápida que você mesma fez:
+
+```bash
+# 1. Ver o que mudou
+git status
+
+# 2. Adicionar os arquivos alterados
+git add .
+
+# 3. Criar o commit
+git commit -m "descricao do que mudou"
+
+# 4. Enviar para o GitHub
+git push origin main
+```
+
+Pronto. O repositório já está atualizado.
+
+## Método 2 — Pull Request (recomendado para mudanças maiores)
+
+Usar quando quiser revisar antes de publicar, ou quando outra pessoa sugerir alterações:
+
+```bash
+# 1. Criar uma branch para sua alteração
+git checkout -b minha-mudanca
+
+# 2. Fazer as alterações nos arquivos...
+
+# 3. Adicionar e commitar
+git add .
+git commit -m "descricao da mudanca"
+
+# 4. Enviar a branch para o GitHub
+git push origin minha-mudanca
+```
+
+Depois, no navegador:
+
+1. Acesse https://github.com/Indianara/tato-projects
+2. Vai aparecer um aviso: **"minha-mudanca had recent pushes"**
+3. Clique em **"Compare & pull request"**
+4. Escreva um título e descrição
+5. Clique em **"Create pull request"**
+6. Revise as alterações na aba **"Files changed"**
+7. Clique em **"Merge pull request"** → **"Confirm merge"**
+8. Pronto, a alteração está no `main`
+
+### Para atualizar seu computador depois do merge:
+```bash
+git checkout main
+git pull origin main
+```
+
+## Método 3 — Atalho: pelo site do GitHub (sem terminal)
+
+Para alterações pequenas (ex: ajustar README):
+
+1. Acesse https://github.com/Indianara/tato-projects
+2. Navegue até o arquivo que quer alterar
+3. Clique no ícone ✏️ (lápis) no canto superior direito
+4. Faça a edição
+5. Lá embaixo, escreva um título para a mudança
+6. Escolha **"Create a new branch for this commit"**
+7. Clique em **"Propose changes"**
+8. Depois clique em **"Create Pull Request"** e **"Merge Pull Request"**
+
+---
+
+## Resumo dos comandos do dia a dia
+
+```bash
+# Atualizar seu computador com o que está no GitHub
+git pull origin main
+
+# Ver o que foi alterado
+git status
+git diff
+
+# Commitar e enviar (push direto)
+git add .
+git commit -m "mensagem"
+git push origin main
+```
+
+## Repositórios
+
+| Projeto | URL |
+|---|---|
+| Código fonte | https://github.com/Indianara/tato-projects |
+| Site publicado | https://indianaralopess.github.io/verbose-octo-dollop/ |
