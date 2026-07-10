@@ -4,11 +4,11 @@ set -euo pipefail
 # ─────────────────────────────────────────────────────
 #  Prestador Mais Próximo — Instalador e Executor
 #  Uso:
-#    curl -fsSL https://raw.githubusercontent.com/indianaralopess/tato-projects/main/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/Indianara/tato-projects/main/install.sh | bash
 #    ./install.sh /caminho/para/planilha.xlsx
 # ─────────────────────────────────────────────────────
 
-REPO_URL="https://github.com/indianaralopess/tato-projects.git"
+REPO_URL="https://github.com/Indianara/tato-projects.git"
 REPO_DIR="tato-projects"
 
 VERDE='\033[0;32m'
@@ -37,7 +37,7 @@ if [[ -z "$XLSX_PATH" ]]; then
     echo "  Uso: ./install.sh /caminho/para/planilha.xlsx"
     echo ""
     echo "  Ou com curl:"
-    echo "    curl -fsSL https://raw.githubusercontent.com/indianaralopess/tato-projects/main/install.sh | bash -s -- /caminho/para/planilha.xlsx"
+    echo "    curl -fsSL https://raw.githubusercontent.com/Indianara/tato-projects/main/install.sh | bash -s -- /caminho/para/planilha.xlsx"
     echo ""
     read -p "  Arraste ou digite o caminho do arquivo XLSX: " XLSX_PATH
     XLSX_PATH=$(echo "$XLSX_PATH" | sed "s/^['\"]//; s/['\"]$//" | xargs)

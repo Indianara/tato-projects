@@ -18,6 +18,10 @@ Files/Backup/
 Files/Input/
 fila-rastreadores*.xlsx
 
+# Arquivos temporarios do Office
+~$*.xlsx
+~$*.xls
+
 # Inspect utility
 _inspect_xlsx.py
 

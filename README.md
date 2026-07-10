@@ -429,51 +429,17 @@ This script:
 
 ## Publish
 
-The project uses a separate GitHub Pages repository by default.
+A publicação é feita no próprio repositório, na pasta `docs/`. O GitHub Pages serve o conteúdo automaticamente.
 
-Current defaults inside publish_pages.sh:
+### Fluxo de publicação
 
-- Default owner: indianaralopess
-- Default fallback repo name when not overridden: verbose-octo-dollop
-- Default branch: main
-- Default visibility: public
+1. `./prepare_pages.sh` — copia o dashboard e CSVs para `docs/`
+2. `./publish_pages.sh` — commita `docs/` e faz push para o GitHub
+3. GitHub Pages atualiza automaticamente (leva alguns minutos)
 
-The workflow used in practice in this repository commonly publishes to:
+### URL do site
 
-- Repository: upgraded-couscous
-- Site URL: https://indianaralopess.github.io/upgraded-couscous/
-
-### Publish existing outputs
-
-```bash
-PAGES_REPO_NAME=upgraded-couscous ./publish_pages.sh
-```
-
-### Reprocess then publish
-
-```bash
-PAGES_REPO_NAME=upgraded-couscous PAGES_RUN_PROCESS=1 ./publish_pages.sh
-```
-
-### What publish_pages.sh does
-
-1. Verifies that gh, git, and rsync are installed.
-2. Optionally runs the Python pipeline when PAGES_RUN_PROCESS=1.
-3. Runs prepare_pages.sh.
-4. Creates the GitHub repository if needed.
-5. Clones or reuses a sibling local clone of the Pages repository.
-6. Synchronizes docs/ into that repository with rsync.
-7. Commits and pushes changes.
-8. Tries to configure GitHub Pages to publish from the repository root on the selected branch.
-
-### Publish-related environment variables
-
-- PAGES_REPO_NAME: target repository name.
-- PAGES_REPO_OWNER: GitHub owner or organization.
-- PAGES_REPO_VISIBILITY: public or private when creating the repo.
-- PAGES_DEFAULT_BRANCH: branch used for the Pages repository.
-- PAGES_REPO_DIR: local path for the cloned Pages repository.
-- PAGES_RUN_PROCESS: set to 1 to rerun the Python pipeline before publication.
+https://indianara.github.io/tato-projects/
 
 ## Operational notes
 
@@ -686,10 +652,33 @@ Para alterações pequenas (ex: ajustar README):
 
 ---
 
-## Resumo dos comandos do dia a dia
+## Repositórios
+
+| Projeto | URL |
+|---|---|
+| Código fonte | https://github.com/Indianara/tato-projects |
+| Site publicado | https://indianara.github.io/tato-projects/ |
+
+## Comando para publicar (terminal, fora do opencode)
 
 ```bash
-# Atualizar seu computador com o que está no GitHub
+cd /Users/indianarasantos/Documents/Developments/Extensions/PrestadorMaisProximo && \
+git add -A && \
+git commit -m "atualizacao $(date '+%Y-%m-%d')" && \
+git push origin main
+```
+
+## Comando para puxar atualizações (terminal, fora do opencode)
+
+```bash
+cd /Users/indianarasantos/Documents/Developments/Extensions/PrestadorMaisProximo && \
+git pull origin main
+```
+
+## Resumo dos comandos
+
+```bash
+# Puxar atualizações do GitHub
 git pull origin main
 
 # Ver o que foi alterado
@@ -698,19 +687,6 @@ git diff
 
 # Commitar e enviar (push direto)
 git add .
-git commit -m "mensagem"
+git commit -m "descricao"
 git push origin main
 ```
-
-## Repositórios
-
-| Projeto | URL |
-|---|---|
-| Código fonte | https://github.com/Indianara/tato-projects |
-| Site publicado | https://indianara.github.io/tato-projects/ |
-
-
-cd /Users/indianarasantos/Documents/Developments/Extensions/PrestadorMaisProximo && \
-git add -A && \
-git commit -m "atualizacao- Abrir site automaticamente $(date '+%Y-%m-%d')" && \
-git push origin main
