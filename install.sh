@@ -4,17 +4,13 @@ set -euo pipefail
 # ─────────────────────────────────────────────────────
 #  Prestador Mais Próximo — Instalador e Executor
 #  Uso:
-#    curl -fsSL https://raw.githubusercontent.com/Indianara/tato-projects/main/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/indianaralopess/tato-projects/main/install.sh | bash
 #    ./install.sh /caminho/para/planilha.xlsx
 # ─────────────────────────────────────────────────────
 
-REPO_OWNER="Indianara"
-REPO_NAME="tato-projects"
-REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
-REPO_DIR="${REPO_NAME}"
-GITHUB_PAT="${GITHUB_PAT:-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}"
+REPO_URL="https://github.com/indianaralopess/tato-projects.git"
+REPO_DIR="tato-projects"
 
-# Cores para output
 VERDE='\033[0;32m'
 AZUL='\033[0;34m'
 AMARELO='\033[1;33m'
@@ -41,7 +37,7 @@ if [[ -z "$XLSX_PATH" ]]; then
     echo "  Uso: ./install.sh /caminho/para/planilha.xlsx"
     echo ""
     echo "  Ou com curl:"
-    echo "    curl -fsSL https://raw.githubusercontent.com/Indianara/tato-projects/main/install.sh | bash -s -- /caminho/para/planilha.xlsx"
+    echo "    curl -fsSL https://raw.githubusercontent.com/indianaralopess/tato-projects/main/install.sh | bash -s -- /caminho/para/planilha.xlsx"
     echo ""
     read -p "  Arraste ou digite o caminho do arquivo XLSX: " XLSX_PATH
     XLSX_PATH=$(echo "$XLSX_PATH" | sed "s/^['\"]//; s/['\"]$//" | xargs)
@@ -72,8 +68,7 @@ if [[ -d "$REPO_DIR" ]]; then
     cd ..
 else
     info "Clonando repositorio..."
-    CLONE_URL="https://${GITHUB_PAT}@github.com/${REPO_OWNER}/${REPO_NAME}.git"
-    git clone "$CLONE_URL"
+    git clone "$REPO_URL"
 fi
 
 cd "$REPO_DIR"
@@ -105,17 +100,14 @@ print(f'{len(df)} registros convertidos')
 "
 ok "Arquivo convertido: Files/pendente_para_instalacao.csv"
 
-# ── 4. Exportar PAT para o publish ───────────────────
-export GITHUB_PAT="$GITHUB_PAT"
-
-# ── 5. Rodar pipeline ────────────────────────────────
+# ── 4. Rodar pipeline (inclui publicação) ────────────
 echo ""
 info "Executando pipeline..."
 echo ""
 
 python3 src/main2.py
 
-# ── 6. Fim ───────────────────────────────────────────
+# ── 5. Fim ───────────────────────────────────────────
 echo ""
 echo "=============================================="
 echo "  PROCESSAMENTO CONCLUIDO!"
