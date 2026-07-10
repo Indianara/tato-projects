@@ -707,4 +707,4 @@ git push origin main
 | Projeto | URL |
 |---|---|
 | Código fonte | https://github.com/Indianara/tato-projects |
-| Site publicado | https://indianaralopess.github.io/verbose-octo-dollop/ |
+| Site publicado | https://indianara.github.io/tato-projects/ |
