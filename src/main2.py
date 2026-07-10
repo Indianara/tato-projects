@@ -364,10 +364,28 @@ def main():
     process(df_com, candidates, geo)
 
     # ── 7. Publicar site ──────────────────────────────────────────────────
-    print("\n[7/7] Publicando site no GitHub Pages...")
-    import subprocess
-    subprocess.run(["chmod", "+x", "publish_pages.sh", "prepare_pages.sh"], cwd=BASE_DIR)
-    subprocess.run(["./publish_pages.sh"], cwd=BASE_DIR)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(BASE_DIR / ".env")
+    except ImportError:
+        pass
+    import os
+
+    gh_token = os.getenv("GITHUB_PAT") or os.getenv("GITHUB_TOKEN") or ""
+    if gh_token:
+        print("\n[7/7] Publicando site no GitHub Pages...")
+        import subprocess
+        env = os.environ.copy()
+        env["GITHUB_PAT"] = gh_token
+        subprocess.run(["chmod", "+x", "publish_pages.sh", "prepare_pages.sh"], cwd=BASE_DIR, capture_output=True)
+        result = subprocess.run(["./publish_pages.sh"], cwd=BASE_DIR, env=env)
+        if result.returncode == 0:
+            print("  ✅ Publicação concluída!")
+        else:
+            print("  ⚠ Publicação falhou (verifique o token e o repositório)")
+    else:
+        print("\n[7/7] ⏭ Publicação pulada (GITHUB_PAT não configurado)")
+        print("  Para publicar, crie um .env com GITHUB_PAT ou exporte a variável")
 
     # ── Fim ───────────────────────────────────────────────────────────────
     print("\n" + "=" * 60)

@@ -29,7 +29,7 @@ APP_NAME = "PrestadorMaisProximo"
 
 OPTIONS = {
     "argv_emulation": True,
-    "iconfile": "icon.icns",
+    # "iconfile": "icon.icns",
     "packages": [
         "pandas",
         "requests",
