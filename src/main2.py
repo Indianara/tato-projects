@@ -272,10 +272,32 @@ def carregar_ou_normalizar() -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     return df_a, df_p, coord_manuais
 
 
+def mostrar_versao():
+    import subprocess, os
+    BASE = Path(__file__).parent.parent
+    try:
+        hash_ = subprocess.run(
+            ["git", "log", "-1", "--format=%h"], capture_output=True, text=True, cwd=BASE
+        ).stdout.strip()
+        data_commit = subprocess.run(
+            ["git", "log", "-1", "--format=%ad", "--date=short"], capture_output=True, text=True, cwd=BASE
+        ).stdout.strip()
+        data_pub = subprocess.run(
+            ["git", "log", "-1", "--grep=publicar dashboard", "--format=%ad %H:%M", "--date=short"],
+            capture_output=True, text=True, cwd=BASE
+        ).stdout.strip()
+    except Exception:
+        hash_, data_commit, data_pub = "", "", ""
+
+    print(f"  Versão:     {hash_ or 'N/A'} ({data_commit or 'N/A'})")
+    print(f"  Última pub: {data_pub or 'N/A'}")
+    print("=" * 60)
+
+
 def main():
     print("=" * 60)
     print("  Prestador Mais Próximo — Pipeline 2.0")
-    print("=" * 60)
+    mostrar_versao()
 
     # ── 1. Normalização ──────────────────────────────────────────────────
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
