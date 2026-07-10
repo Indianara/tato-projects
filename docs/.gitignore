@@ -1,0 +1,32 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+cache/
+/output/
+.DS_Store
+*.egg-info/
+
+# Dados gerados (vêm do upload XLSX)
+Files/pendente_para_instalacao.csv
+Files/upload_temp.xlsx
+
+# Backups
+Files/Backup/
+
+# Input files grandes
+Files/Input/
+fila-rastreadores*.xlsx
+
+# Arquivos temporarios do Office
+~$*.xlsx
+~$*.xls
+
+# Inspect utility
+_inspect_xlsx.py
+
+# Build artifacts
+build/
+dist/
+*.dmg
+*.app

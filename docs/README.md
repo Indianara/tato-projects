@@ -690,18 +690,3 @@ git add .
 git commit -m "descricao"
 git push origin main
 ```
-## para publicar rodar:
-git add .
-git commit -m "Descrição"
-git pull --rebase https://github.com/Indianara/tato-projects.git main
-
-
-# publicar o pages no repo antigo:
-cd /Users/indianarasantos/Documents/Developments/Extensions/PrestadorMaisProximo && \
-./prepare_pages.sh && \
-cd docs && \
-git init && \
-git add . && \
-git commit -m "publicar $(date '+%Y-%m-%d')" && \
-git remote add origin https://github.com/indianaralopess/verbose-octo-dollop.git && \
-git push origin main --force
