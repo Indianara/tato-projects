@@ -21,3 +21,9 @@ fila-rastreadores*.xlsx
 
 # Inspect utility
 _inspect_xlsx.py
+
+# Build artifacts (py2app)
+build/
+dist/
+*.dmg
+*.app
