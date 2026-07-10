@@ -280,11 +280,11 @@ def mostrar_versao():
             ["git", "log", "-1", "--format=%h"], capture_output=True, text=True, cwd=BASE
         ).stdout.strip()
         data_commit = subprocess.run(
-            ["git", "log", "-1", "--format=%ad %H:%M", "--date=short"],
+            ["git", "log", "-1", "--format=%ad", "--date=format:%Y-%m-%d %H:%M"],
             capture_output=True, text=True, cwd=BASE
         ).stdout.strip()
         data_pub = subprocess.run(
-            ["git", "log", "-1", "--grep=publicar dashboard", "--format=%ad %H:%M", "--date=short"],
+            ["git", "log", "-1", "--grep=publicar dashboard", "--format=%ad", "--date=format:%Y-%m-%d %H:%M"],
             capture_output=True, text=True, cwd=BASE
         ).stdout.strip()
     except Exception:
