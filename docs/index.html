@@ -1,0 +1,3713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Prestadores</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg: #f4efe8;
+      --panel: #fffaf4;
+      --panel-strong: #fff;
+      --text: #1e1a16;
+      --muted: #6d6257;
+      --line: #dccfbe;
+      --accent: #0d7a63;
+      --accent-soft: #d7efe8;
+      --accent-2: #c96b2c;
+      --accent-2-soft: #f8e0d1;
+      --danger: #a03d3d;
+      --shadow: 0 16px 40px rgba(54, 38, 24, 0.08);
+      --radius: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(13, 122, 99, 0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(201, 107, 44, 0.12), transparent 22%),
+        linear-gradient(180deg, #fbf6ef 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      width: min(1440px, calc(100vw - 32px));
+      margin: 24px auto 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(13, 122, 99, 0.95), rgba(9, 56, 47, 0.96));
+      color: #f5fbf8;
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -80px -80px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 860px;
+      color: rgba(245, 251, 248, 0.86);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .upload {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #f3fdf9;
+      color: #08392f;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 0;
+    }
+
+    .upload input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .hero-note {
+      font-size: 13px;
+      color: rgba(245, 251, 248, 0.8);
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+    }
+
+    .status-line {
+      margin-top: 14px;
+      font-size: 14px;
+      color: rgba(245, 251, 248, 0.88);
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .cards {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(220, 207, 190, 0.65);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .card {
+      padding: 20px;
+      min-height: 144px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -14px;
+      top: -14px;
+      width: 92px;
+      height: 92px;
+      border-radius: 22px;
+      background: rgba(13, 122, 99, 0.06);
+      transform: rotate(18deg);
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .card .value {
+      margin-top: 12px;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .card .sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+      max-width: 22ch;
+    }
+
+    .filters {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      padding: 18px;
+      align-items: flex-end;
+    }
+
+    @media (min-width: 1181px) {
+      .filters > .filter-search-wide { grid-column: 1 / span 2; }
+    }
+
+    .filter {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .filter input,
+    .filter select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      color: var(--text);
+      border-radius: 14px;
+      height: 46px;
+      padding: 11px 12px;
+      font: inherit;
+    }
+
+    .filter-menu-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .filter-multi-toggle {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 8px 12px;
+      font: inherit;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .filter-multi-toggle-label {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .filter-multi-toggle-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: none;
+      color: var(--muted);
+    }
+
+    .filter-multi-clear {
+      border: 0;
+      background: #f3ece3;
+      color: #5e5143;
+      border-radius: 999px;
+      width: 22px;
+      height: 22px;
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+
+    .filter-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      width: min(320px, 84vw);
+      max-height: 320px;
+      overflow: auto;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+      z-index: 9999;
+    }
+
+    .filter-menu[hidden] {
+      display: none;
+    }
+
+    .filter-menu-search {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fffaf3;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font: inherit;
+      margin-bottom: 10px;
+    }
+
+    .filter-menu-list {
+      display: grid;
+      gap: 6px;
+      max-height: 230px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .filter-menu-empty {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 8px 4px;
+    }
+
+    .filter-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      align-self: end;
+      gap: 8px;
+    }
+
+    .export-menu-wrap .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 46px;
+      background: #f0f0f0;
+      color: #5e5143;
+      border: 1px solid #e0d5c7;
+    }
+
+    .export-menu-wrap .btn:hover {
+      background: #ebe5dd;
+      border-color: #d0c5b5;
+    }
+
+    .bar-row.clickable {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .bar-row.clickable:hover {
+      background: rgba(13, 122, 99, 0.08);
+      border-radius: 6px;
+      padding: 2px 4px;
+    }
+
+    .bar-row.filter-active {
+      background: rgba(13, 122, 99, 0.15);
+      border-left: 3px solid var(--accent);
+      padding-left: 8px;
+      border-radius: 6px;
+    }
+
+    .reset-btn {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 10px;
+      height: 46px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .reset-btn:hover {
+      color: var(--text);
+      border-color: #cbb9a4;
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .filter-divider {
+      color: var(--line);
+      font-size: 20px;
+      line-height: 1;
+      padding: 0 6px;
+      user-select: none;
+    }
+
+    .export-menu-wrap {
+      position: relative;
+    }
+
+    .export-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 160px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 8px;
+      z-index: 9999;
+    }
+
+    .export-menu[hidden] {
+      display: none;
+    }
+
+    .export-menu button {
+      border: 1px solid var(--line);
+      background: #fbf6ef;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 14px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-soft {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 11px;
+      border-radius: 8px;
+    }
+
+    .btn-group {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-right: 8px;
+    }
+
+    .btn-group-item {
+      border: 0;
+      background: transparent;
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-group-item.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 18px;
+      padding: 8px 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      color: var(--text);
+    }
+
+    .two-col {
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+
+    .three-col {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px 0;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .panel-body {
+      padding: 16px 20px 20px;
+    }
+
+    .panel-body--map {
+      position: relative;
+      min-height: 180px;
+    }
+
+    .chart-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 480px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-right: 12px;
+      scrollbar-gutter: stable;
+    }
+
+    .chart-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .chart-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chart-list::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 4px;
+    }
+
+    .chart-list::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+
+    .accordion-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 20px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+
+    .accordion-toggle[aria-expanded="false"] {
+      transform: rotate(-90deg);
+    }
+
+    .accordion-content {
+      max-height: 2000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      opacity: 1;
+    }
+
+    .accordion-content[hidden] {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .map-container {
+      width: 100%;
+      height: 400px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f0f0f0;
+    }
+
+    .map-container--brazil {
+      height: 460px;
+      background: linear-gradient(180deg, #f6efe6 0%, #f2e8dc 100%);
+      border: 1px solid rgba(220, 207, 190, 0.8);
+    }
+
+    .map-container--brazil .leaflet-control-container .leaflet-bottom {
+      margin-bottom: 4px;
+    }
+
+    .map-container--brazil .leaflet-map-pane {
+      margin-left: 40px;
+    }
+
+    .map-legend {
+      background: rgba(255, 252, 247, 0.10);
+      border: 1px solid rgba(220, 207, 190, 0.9);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(54, 38, 24, 0.08);
+      padding: 4px 6px;
+      color: var(--text);
+      font-size: 10px;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .map-legend strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .map-legend-scale {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+    }
+
+    .map-legend-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      min-width: 26px;
+    }
+
+    .map-legend-label {
+      font-size: 8px;
+      color: var(--muted);
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .map-legend-swatch {
+      width: 100%;
+      height: 6px;
+      border-radius: 1px;
+      border: 1px solid rgba(94, 81, 67, 0.18);
+    }
+
+    .map-container--brazil .leaflet-control-container .leaflet-bottom {
+      margin-bottom: 4px;
+    }
+
+    .map-container--brazil :is(.leaflet-control-zoom a, .leaflet-popup-content-wrapper) {
+      border-radius: 10px;
+    }
+
+    .map-container--brazil .leaflet-control-zoom {
+      border: 1px solid rgba(220, 207, 190, 0.9);
+      box-shadow: 0 10px 24px rgba(54, 38, 24, 0.12);
+      overflow: hidden;
+    }
+
+    .map-container--brazil .leaflet-control-zoom a {
+      color: var(--text);
+      background: rgba(255, 252, 247, 0.96);
+      border-bottom-color: rgba(220, 207, 190, 0.9);
+    }
+
+    .map-container--brazil .leaflet-control-zoom a:hover {
+      background: #fff;
+    }
+
+    .map-legend {
+      background: rgba(255, 252, 247, 0.10);
+      border: 1px solid rgba(220, 207, 190, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(54, 38, 24, 0.10);
+      padding: 5px 8px;
+      color: var(--text);
+      font-size: 11px;
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+
+    .map-legend strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .map-legend-scale {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+    }
+
+    .map-legend-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      min-width: 32px;
+    }
+
+    .map-legend-label {
+      font-size: 9px;
+      color: var(--muted);
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .map-legend-swatch {
+      width: 100%;
+      height: 8px;
+      border-radius: 2px;
+      border: 1px solid rgba(94, 81, 67, 0.18);
+    }
+
+    .bar-row {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: minmax(160px, 1.2fr) 2.2fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .bar-label {
+      font-size: 14px;
+      font-weight: 700;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .bar-track {
+      position: relative;
+      height: 16px;
+      background: #efe5d8;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), #22a07e);
+    }
+
+    .bar-fill.alt {
+      background: linear-gradient(90deg, var(--accent-2), #db8447);
+    }
+
+    .bar-value {
+      min-width: 92px;
+      text-align: right;
+      padding-right: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .map-route-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid #d8cbbb;
+      background: #fbf6ef;
+      color: #5e5143;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .map-route-link:hover {
+      background: #f3ece3;
+      border-color: #cbb9a4;
+    }
+
+    .whatsapp-link {
+      background: transparent !important;
+      border-color: #b0b0b0 !important;
+      color: #888 !important;
+    }
+
+    .whatsapp-link:hover {
+      background: transparent !important;
+      border-color: #666 !important;
+      color: #555 !important;
+    }
+
+    .vehicle-cell-truncate {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .vehicle-copy-text {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      cursor: copy;
+    }
+
+    .vehicle-copy-text:hover {
+      color: var(--accent);
+    }
+
+    .vehicle-col-address {
+      min-width: 180px;
+      max-width: 180px;
+    }
+
+    .vehicle-col-associated {
+      min-width: 180px;
+      max-width: 180px;
+    }
+
+    .vehicle-col-consultant {
+      min-width: 140px;
+      max-width: 140px;
+    }
+
+    .vehicle-col-institution {
+      min-width: 150px;
+      max-width: 150px;
+    }
+
+    .vehicle-col-provider {
+      min-width: 150px;
+      max-width: 150px;
+    }
+
+    .vehicle-col-route {
+      min-width: 108px;
+      max-width: 108px;
+    }
+
+    .vehicle-col-whatsapp {
+      min-width: 56px;
+      max-width: 56px;
+      text-align: center;
+    }
+
+    .adaptive-table-compact {
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
+    }
+
+    .adaptive-table-wide {
+      width: 100%;
+      min-width: calc(var(--table-col-count, 14) * var(--table-col-min-width, 120px));
+      table-layout: fixed;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel-strong);
+      max-height: 600px;
+    }
+
+    .table-wrap.horizontal-scroll {
+      overflow-x: auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .table-wrap::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .table-wrap::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 4px;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee2d2;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #fbf6ef;
+      z-index: 1;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sortable-head {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sort-indicator {
+      color: #9b8b78;
+      font-size: 11px;
+      line-height: 1;
+      min-width: 10px;
+      text-align: center;
+    }
+
+    th[aria-sort="ascending"] .sort-indicator,
+    th[aria-sort="descending"] .sort-indicator {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .resize-handle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 6px;
+      cursor: col-resize;
+      z-index: 2;
+      background: transparent;
+      background-clip: content-box;
+      padding: 0 2px;
+    }
+
+    .resize-handle:hover::after,
+    .resize-handle.resizing::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 2px;
+      width: 2px;
+      background: rgba(13, 122, 99, 0.35);
+      border-radius: 2px;
+    }
+
+    tr:hover td {
+      background: #fffcf7;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f3ece3;
+      color: #5e5143;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .grid.two-col > .panel:first-child {
+      position: relative;
+    }
+
+    #providerDetail {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: var(--radius);
+      padding: 32px 20px;
+    }
+
+    #providerDetail[hidden] {
+      display: none;
+    }
+
+    #providerDetail .provider-detail-card {
+      background: var(--panel);
+      border: 1px solid rgba(220, 207, 190, 0.65);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(54, 38, 24, 0.18);
+      padding: 20px;
+      max-width: 400px;
+      width: 100%;
+      display: grid;
+      gap: 8px;
+    }
+
+    .provider-detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .provider-detail-header h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .provider-detail-close {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .provider-detail-close:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    .provider-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 6px 16px;
+    }
+
+    .provider-detail-field {
+      display: grid;
+      gap: 2px;
+    }
+
+    .provider-detail-field-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .provider-detail-field-value {
+      font-size: 13px;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .provider-detail-field-value a {
+      color: #1a73e8;
+      text-decoration: none;
+    }
+
+    .provider-detail-field-value a:hover {
+      text-decoration: underline;
+    }
+
+    .provider-whatsapp-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #25d366;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .provider-whatsapp-link:hover {
+      text-decoration: underline;
+    }
+
+    .provider-whatsapp-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #25d366;
+      color: #fff;
+    }
+
+    .vehicle-controls {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .column-toggle {
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .column-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: min(320px, 84vw);
+      max-height: 320px;
+      overflow: auto;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+      z-index: 9999;
+    }
+
+    .column-menu > .column-items {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .column-search {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 6px 0;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--canvas);
+      color: var(--text);
+      font-size: 12px;
+    }
+    .column-search:focus {
+      outline: none;
+      border-color: var(--theme);
+    }
+
+    .column-menu[hidden] {
+      display: none;
+    }
+
+    .column-menu-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .column-menu-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .column-menu-actions button {
+      border: 1px solid var(--line);
+      background: #fbf6ef;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .column-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 2px;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .column-item input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      flex: none;
+      cursor: pointer;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 28px;
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.45);
+    }
+
+    .note-box {
+      display: grid;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .footer-space {
+      height: 24px;
+    }
+
+    @media (max-width: 1180px) {
+      .cards,
+      .filters,
+      .three-col,
+      .two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .filters > .filter-search-wide {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        width: min(100vw - 16px, 1440px);
+        margin: 8px auto 24px;
+      }
+
+      .hero,
+      .panel {
+        border-radius: 20px;
+      }
+
+      .cards,
+      .filters,
+      .three-col,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .bar-row {
+        grid-template-columns: 1fr;
+      }
+
+      .bar-value {
+        text-align: left;
+      }
+
+      .map-container--brazil {
+        height: min(460px, 50vh);
+      }
+
+      .card {
+        min-height: 110px;
+      }
+
+      #vehicleTable {
+        min-width: 1200px;
+      }
+      #vehicleTable th,
+      #vehicleTable td {
+        min-width: 0 !important;
+        max-width: none !important;
+      }
+
+      #providerTable {
+        min-width: 800px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        padding: 16px;
+      }
+
+      .chart-list {
+        max-height: min(480px, 60vh);
+      }
+
+      .table-wrap {
+        max-height: min(600px, 70vh);
+      }
+
+      .export-menu {
+        left: 0;
+        right: auto;
+        max-width: calc(100vw - 32px);
+      }
+
+      #providerDetail {
+        padding: 16px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <h1>Dashboard de Prestadores — Resultado Final</h1>
+      <p>
+        Visualização de prestadores mais próximos por veículo. Selecione a pasta com os CSVs do resultado para carregar a análise.
+      </p>
+      <div class="toolbar">
+        <div class="hero-note" id="sourceSummary">Nenhuma pasta importada.</div>
+        <div class="export-menu-wrap">
+          <button class="btn btn-soft" type="button" id="exportBtn" title="Exportar tabela de veículos">Exportar</button>
+          <div class="export-menu" id="exportMenu" hidden>
+            <button type="button" onclick="exportFilteredView()">CSV (todas colunas)</button>
+            <button type="button" onclick="exportTableCsv()">CSV (só tabela)</button>
+            <button type="button" onclick="exportXmlView()">XML (Excel)</button>
+          </div>
+        </div>
+      </div>
+      <div class="status-line" id="statusLine">
+        Aguardando dados do resultado final.
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:rgba(245,251,248,0.55)" id="updateTimestamp"></div>
+    </section>
+
+    <section class="grid cards">
+      <article class="panel card">
+        <h3>Placas Analisadas</h3>
+        <div class="value" id="kpiPlacas">0</div>
+        <div class="sub">Total de linhas de veículos consideradas após filtros.</div>
+      </article>
+      <article class="panel card">
+        <h3>Prestadores Atendidos</h3>
+        <div class="value" id="kpiPrestadores">0</div>
+        <div class="sub">Prestadores únicos que aparecem como Top 1 no recorte atual.</div>
+      </article>
+      <article class="panel card">
+        <h3>Estados</h3>
+        <div class="value" id="kpiEstados">0</div>
+        <div class="sub">Quantidade de UFs presentes entre os veículos filtrados.</div>
+      </article>
+      <article class="panel card">
+        <h3>Concentração Top 1</h3>
+        <div class="value" id="kpiTop1Share">0%</div>
+        <div class="sub" id="kpiTop1Detail">Participação do prestador líder no recorte atual.</div>
+      </article>
+    </section>
+
+    <section class="panel grid filters" id="filtersGrid">
+      <select id="resultFileSelect" style="display: none;"></select>
+      <div class="filter filter-search-wide">
+        <label for="searchInput">Busca Geral</label>
+        <input id="searchInput" type="text" placeholder="Placa, associado, prestador, consultor...">
+      </div>
+      <div class="filter" data-filter-key="state">
+        <label for="stateFilter">UF</label>
+        <div class="filter-menu-wrap">
+          <button id="stateFilter" class="filter-multi-toggle" type="button"></button>
+          <div id="stateFilterMenu" class="filter-menu" hidden></div>
+        </div>
+      </div>
+      <div class="filter" data-filter-key="provider">
+        <label for="providerFilter">Prestador Top 1</label>
+        <div class="filter-menu-wrap">
+          <button id="providerFilter" class="filter-multi-toggle" type="button"></button>
+          <div id="providerFilterMenu" class="filter-menu" hidden></div>
+        </div>
+      </div>
+      <div class="filter" data-filter-key="tracker">
+        <label for="trackerFilter">Obrigatório Rastreador</label>
+        <div class="filter-menu-wrap">
+          <button id="trackerFilter" class="filter-multi-toggle" type="button"></button>
+          <div id="trackerFilterMenu" class="filter-menu" hidden></div>
+        </div>
+      </div>
+      <div class="filter-actions" id="filterActions">
+        <div class="filter-menu-wrap" style="position:relative;">
+          <button class="btn btn-soft" id="addFilterBtn" type="button" title="Adicionar filtro">Mais filtros</button>
+          <div id="addFilterMenu" class="filter-menu" hidden>
+            <div class="column-menu-head">
+              <span>Adicionar filtro</span>
+            </div>
+            <input class="filter-menu-search" type="text" id="addFilterSearch" placeholder="Buscar coluna...">
+            <div class="filter-menu-list" id="addFilterList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid two-col">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Prestadores com Mais Placas</h2>
+            <p>Volume de veículos atribuídos ao Top 1, com participação percentual no recorte atual.</p>
+          </div>
+          <span class="pill" id="providerChartMeta">0 itens</span>
+        </div>
+        <div class="panel-body chart-list" id="providerChart"></div>
+        <div id="providerDetail" hidden></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div style="flex: 1;">
+            <h2>Placas por Estado</h2>
+            <p>Volume de placas por estado no recorte atual.</p>
+          </div>
+          <div class="btn-group" id="stateToggleView">
+            <button class="btn-group-item active" data-view="map">Mapa</button>
+            <button class="btn-group-item" data-view="chart">Gráfico</button>
+          </div>
+          <span class="pill" id="stateChartMeta">0 UFs</span>
+        </div>
+        <div class="panel-body panel-body--map">
+          <div id="stateMapView" class="map-container map-container--brazil"></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Veículos por Tipo</h2>
+            <p>Distribuição dos veículos entre Carro, Moto e Caminhão no recorte atual.</p>
+          </div>
+          <span class="pill" id="tipoChartMeta">0 tipos</span>
+        </div>
+        <div class="panel-body chart-list" id="tipoChart"></div>
+      </article>
+    </section>
+
+    <section class="grid three-col">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Top Consultores</h2>
+            <p>Quantidade de placas por consultor.</p>
+          </div>
+        </div>
+        <div class="panel-body chart-list" id="consultorChart"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Top Regionais</h2>
+            <p>Distribuição operacional por regional.</p>
+          </div>
+        </div>
+        <div class="panel-body chart-list" id="regionalChart"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Faixas de Distância</h2>
+            <p>Leitura rápida da complexidade logística do Top 1.</p>
+          </div>
+        </div>
+        <div class="panel-body chart-list" id="distanceChart"></div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" id="providerTableHead">
+            <button class="accordion-toggle" id="providerTableToggle" aria-expanded="false">▼</button>
+            <div>
+              <h2>Tabela de Prestadores</h2>
+              <p>Prestadores ordenáveis por volume, percentual e distância média.</p>
+            </div>
+          </div>
+          <span class="pill" id="providerTableMeta">0 linhas</span>
+        </div>
+        <div class="accordion-content" id="providerTableContent" hidden>
+          <div class="panel-body">
+            <div class="table-wrap horizontal-scroll">
+              <table id="providerTable"></table>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Tabela de Veículos</h2>
+            <p>Linhas do CSV com ordenação por qualquer coluna relevante do resultado.</p>
+          </div>
+          <div class="vehicle-controls">
+            <button id="vehicleColumnsToggle" class="column-toggle" type="button">Colunas</button>
+            <div id="vehicleColumnsMenu" class="column-menu" hidden></div>
+            <button id="exportTableBtn" class="btn-icon" type="button" title="Exportar tabela (CSV)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <span class="pill" id="vehicleTableMeta">0 linhas</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table id="vehicleTable"></table>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <div class="footer-space"></div>
+  </div>
+
+  <script>
+    const state = {
+      files: [],
+      resultFiles: [],
+      activeResultFileName: "",
+      rows: [],
+      filteredRows: [],
+      vehicleColumns: [],
+      vehicleVisibleColumns: [],
+      filterSelections: {
+        state: [],
+        provider: [],
+        tracker: [],
+      },
+      filterOptions: {
+        state: [],
+        provider: [],
+        tracker: [],
+      },
+      dynamicFilterKeys: [],
+      dynamicFilterSelections: {},
+      dynamicFilterOptions: {},
+      sortVehicle: { key: "Placa", direction: "asc" },
+      sortProvider: { key: "placas", direction: "desc" },
+      chartSelections: {
+        provider: "",
+        consultor: "",
+        regional: "",
+        distance: "",
+        tipo: "",
+      },
+      brazilMap: null,
+      brazilStatesGeoJson: null,
+      providerDetail: "",
+      providerDetailRow: null,
+      stateView: "map",
+    };
+
+    const ids = {
+      sourceSummary: document.getElementById("sourceSummary"),
+      statusLine: document.getElementById("statusLine"),
+      resultFileSelect: document.getElementById("resultFileSelect"),
+      searchInput: document.getElementById("searchInput"),
+      stateFilter: document.getElementById("stateFilter"),
+      stateFilterMenu: document.getElementById("stateFilterMenu"),
+      providerFilter: document.getElementById("providerFilter"),
+      providerFilterMenu: document.getElementById("providerFilterMenu"),
+      trackerFilter: document.getElementById("trackerFilter"),
+      trackerFilterMenu: document.getElementById("trackerFilterMenu"),
+      addFilterBtn: document.getElementById("addFilterBtn"),
+      addFilterMenu: document.getElementById("addFilterMenu"),
+      addFilterSearch: document.getElementById("addFilterSearch"),
+      addFilterList: document.getElementById("addFilterList"),
+      filtersGrid: document.getElementById("filtersGrid"),
+      kpiPlacas: document.getElementById("kpiPlacas"),
+      kpiPrestadores: document.getElementById("kpiPrestadores"),
+      kpiEstados: document.getElementById("kpiEstados"),
+      kpiTop1Share: document.getElementById("kpiTop1Share"),
+      kpiTop1Detail: document.getElementById("kpiTop1Detail"),
+      providerChartMeta: document.getElementById("providerChartMeta"),
+      stateChartMeta: document.getElementById("stateChartMeta"),
+      providerChart: document.getElementById("providerChart"),
+      stateMap: document.getElementById("stateMapView"),
+      stateToggleView: document.getElementById("stateToggleView"),
+      consultorChart: document.getElementById("consultorChart"),
+      regionalChart: document.getElementById("regionalChart"),
+      distanceChart: document.getElementById("distanceChart"),
+      tipoChartMeta: document.getElementById("tipoChartMeta"),
+      tipoChart: document.getElementById("tipoChart"),
+      providerTableMeta: document.getElementById("providerTableMeta"),
+      providerTable: document.getElementById("providerTable"),
+      vehicleTableMeta: document.getElementById("vehicleTableMeta"),
+      vehicleTable: document.getElementById("vehicleTable"),
+      vehicleColumnsToggle: document.getElementById("vehicleColumnsToggle"),
+      vehicleColumnsMenu: document.getElementById("vehicleColumnsMenu"),
+      exportBtn: document.getElementById("exportBtn"),
+      exportMenu: document.getElementById("exportMenu"),
+    };
+
+    const candidateStateColumns = ["UF", "Estado_UF", "_state", "uf", "estado"];
+    const defaultFilterKeys = ["state", "provider", "tracker"];
+    const ufNames = {
+      AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas",
+      BA: "Bahia", CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo",
+      GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul",
+      MG: "Minas Gerais", PA: "Pará", PB: "Paraíba", PR: "Paraná",
+      PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro",
+      RN: "Rio Grande do Norte", RS: "Rio Grande do Sul", RO: "Rondônia",
+      RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo",
+      SE: "Sergipe", TO: "Tocantins",
+    };
+    function getStateDisplayName(uf) {
+      return ufNames[uf] || uf;
+    }
+    const candidateInstitutionColumns = ["Instituição", "Instituicao", "instituicao"];
+    const candidateTrackerColumns = ["Obrigatório Rastreador", "Obrigatório_Rastreador", "obrigatorio_rastreador"];
+    const candidateConsultorColumns = ["Consultor", "consultor"];
+    const candidateRegionalColumns = ["Regional", "regional"];
+    const distanceBucketDefinitions = [
+      { label: "0-5 km", min: 0, max: 5 },
+      { label: "5-10 km", min: 5, max: 10 },
+      { label: "10-15 km", min: 10, max: 15 },
+      { label: "15-20 km", min: 15, max: 20 },
+      { label: "20-30 km", min: 20, max: 30 },
+      { label: "30-50 km", min: 30, max: 50 },
+      { label: "50-100 km", min: 50, max: 100 },
+      { label: "100-250 km", min: 100, max: 250 },
+      { label: "250-500 km", min: 250, max: 500 },
+      { label: "500+ km", min: 500, max: Infinity },
+    ];
+    const vehicleRouteColumn = "Ver no mapa";
+    const vehicleWhatsAppColumn = "WhatsApp";
+    const publishedResultCandidates = [
+      "output/resultado_final.parcial.csv",
+      "output/resultado_final.csv",
+    ];
+    const compactVehicleColumnLimit = 13;
+    const defaultVehicleColumns = [
+      "Placa",
+      "instituicao",
+      "associado",
+      "uf",
+      "Tipo",
+      "endereco",
+      "regional",
+      "consultor",
+      "Prestador_1_Nome",
+      "Prestador_1_Endereco",
+      "Prestador_1_Distancia_km",
+    ];
+
+    ids.resultFileSelect.addEventListener("change", () => {
+      state.activeResultFileName = ids.resultFileSelect.value;
+      loadActiveResult();
+    });
+    ids.searchInput.addEventListener("input", applyFilters);
+    ids.stateFilter.addEventListener("click", () => toggleFilterMenu("state"));
+    ids.providerFilter.addEventListener("click", () => toggleFilterMenu("provider"));
+    ids.trackerFilter.addEventListener("click", () => toggleFilterMenu("tracker"));
+    ids.stateToggleView.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-group-item");
+      if (!btn) return;
+      const view = btn.dataset.view;
+      if (view === state.stateView) return;
+      state.stateView = view;
+      ids.stateToggleView.querySelectorAll(".btn-group-item").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+      applyFilters();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        clearFilters();
+      }
+    });
+    ids.addFilterBtn.addEventListener("click", () => {
+      renderAddFilterMenu();
+      ids.addFilterMenu.hidden = !ids.addFilterMenu.hidden;
+    });
+    ids.addFilterSearch.addEventListener("input", () => {
+      renderAddFilterMenu(ids.addFilterSearch.value);
+    });
+    ids.exportBtn.addEventListener("click", () => {
+      ids.exportMenu.hidden = !ids.exportMenu.hidden;
+    });
+    ids.exportTableBtn = document.getElementById("exportTableBtn");
+    ids.exportTableBtn.addEventListener("click", exportTableCsv);
+
+    ids.vehicleColumnsToggle.addEventListener("click", () => {
+      ids.vehicleColumnsMenu.hidden = !ids.vehicleColumnsMenu.hidden;
+    });
+    document.addEventListener("click", (event) => {
+      if (ids.vehicleColumnsMenu && !ids.vehicleColumnsMenu.hidden) {
+        if (!ids.vehicleColumnsMenu.contains(event.target) && !ids.vehicleColumnsToggle.contains(event.target)) {
+          ids.vehicleColumnsMenu.hidden = true;
+        }
+      }
+      if (ids.exportMenu && !ids.exportMenu.hidden) {
+        if (!ids.exportMenu.contains(event.target) && !ids.exportBtn.contains(event.target)) {
+          ids.exportMenu.hidden = true;
+        }
+      }
+      for (const key of defaultFilterKeys) {
+        const menu = ids[`${key}FilterMenu`];
+        const toggle = ids[`${key}Filter`];
+        if (menu && !menu.hidden) {
+          if (!menu.contains(event.target) && !toggle.contains(event.target)) {
+            menu.hidden = true;
+          }
+        }
+      }
+      for (const col of state.dynamicFilterKeys) {
+        const menu = document.getElementById(getDynamicFilterMenuId(col));
+        const toggle = document.getElementById(getDynamicFilterToggleId(col));
+        if (menu && !menu.hidden) {
+          if (!menu.contains(event.target) && !toggle.contains(event.target)) {
+            menu.hidden = true;
+          }
+        }
+      }
+      if (ids.addFilterMenu && !ids.addFilterMenu.hidden) {
+        if (!ids.addFilterMenu.contains(event.target) && !ids.addFilterBtn.contains(event.target)) {
+          ids.addFilterMenu.hidden = true;
+        }
+      }
+    });
+
+    renderEmpty();
+    bootstrapDashboard();
+
+    async function bootstrapDashboard() {
+      ids.statusLine.textContent = "Tentando carregar o resultado publicado...";
+      const loaded = await loadPublishedResult();
+      if (loaded) {
+        return;
+      }
+
+      ids.statusLine.textContent = "Nenhum resultado publicado encontrado.";
+      ids.sourceSummary.textContent = "Nenhum resultado publicado encontrado.";
+    }
+
+    async function loadPublishedResult() {
+      for (const candidate of publishedResultCandidates) {
+        try {
+          const response = await fetch(candidate, { cache: "no-store" });
+          if (!response.ok) {
+            continue;
+          }
+
+          const lastModified = response.headers.get("Last-Modified");
+          if (lastModified) {
+            document.getElementById("updateTimestamp").textContent = `Última atualização: ${new Date(lastModified).toLocaleString("pt-BR")}`;
+          }
+
+          const text = await response.text();
+          const rows = parseCsv(text);
+          if (!rows.length) {
+            continue;
+          }
+
+          const headers = rows[0] || [];
+          if (!headers.includes("Prestador_1_Nome")) {
+            continue;
+          }
+
+          const resultName = candidate.split("/").pop() || candidate;
+          const parsedResult = {
+            file: null,
+            name: resultName,
+            headers,
+            rows,
+          };
+
+          state.files = [];
+          state.resultFiles = [parsedResult];
+          state.activeResultFileName = parsedResult.name;
+            ids.sourceSummary.textContent = "";
+          setActiveResult(parsedResult);
+          return true;
+        } catch (error) {
+          console.warn(`Falha ao carregar ${candidate}:`, error);
+        }
+      }
+
+      return false;
+    }
+
+    async function handleFolderImport(event) {
+      const fileList = Array.from(event.target.files || []);
+      state.files = fileList;
+
+      if (!fileList.length) {
+        renderEmpty();
+        return;
+      }
+
+      ids.sourceSummary.textContent = `${fileList.length} arquivo(s) CSV detectados na pasta importada.`;
+      ids.statusLine.textContent = "Lendo arquivos e procurando resultados compatíveis...";
+
+      const csvFiles = fileList.filter((file) => file.name.toLowerCase().endsWith(".csv"));
+      const parsedFiles = [];
+
+      for (const file of csvFiles) {
+        const text = await file.text();
+        const rows = parseCsv(text);
+        const headers = rows.length ? rows[0] : [];
+        parsedFiles.push({
+          file,
+          name: file.webkitRelativePath || file.name,
+          headers,
+          rows,
+        });
+      }
+
+      state.resultFiles = parsedFiles.filter((item) =>
+        item.headers.includes("Prestador_1_Nome")
+      );
+
+      if (!state.resultFiles.length) {
+        state.rows = [];
+        state.filteredRows = [];
+        state.vehicleColumns = [];
+        state.vehicleVisibleColumns = [];
+          ids.statusLine.textContent = "Nenhum CSV de resultado foi encontrado. Gere o arquivo resultado_final.csv pela main e importe a pasta novamente.";
+        renderEmpty("Nenhum arquivo de resultado detectado.");
+        return;
+      }
+
+      populateResultFileSelect();
+      state.activeResultFileName = state.resultFiles[0].name;
+      ids.resultFileSelect.value = state.activeResultFileName;
+
+      const firstFile = state.resultFiles[0]?.file;
+      if (firstFile?.lastModified) {
+        document.getElementById("updateTimestamp").textContent = `Última atualização: ${new Date(firstFile.lastModified).toLocaleString("pt-BR")}`;
+      }
+
+      loadActiveResult();
+    }
+
+    function populateResultFileSelect() {
+      ids.resultFileSelect.innerHTML = "";
+      for (const item of state.resultFiles) {
+        const option = document.createElement("option");
+        option.value = item.name;
+        option.textContent = item.name;
+        ids.resultFileSelect.appendChild(option);
+      }
+    }
+
+    function loadActiveResult() {
+      const selected = state.resultFiles.find((item) => item.name === state.activeResultFileName);
+      if (!selected) {
+        return;
+      }
+
+      setActiveResult(selected);
+    }
+
+    function setActiveResult(selected) {
+      if (!selected?.rows?.length) {
+        return;
+      }
+
+      const [headers, ...dataRows] = selected.rows;
+      state.vehicleColumns = headers;
+      state.vehicleVisibleColumns = [...getDefaultVisibleVehicleColumns(headers), vehicleRouteColumn, vehicleWhatsAppColumn];
+      state.rows = dataRows.map((values) => rowFromHeaders(headers, values));
+      ids.statusLine.textContent = "";
+      populateFilters();
+      clearFilters(false);
+    }
+
+    function getDefaultVisibleVehicleColumns(headers) {
+      const fromPriority = defaultVehicleColumns.filter((col) => headers.includes(col));
+      const hiddenPatterns = /(cnpj|cpf|cep|endereco|endereço|latitude|longitude|lat|lon)/i;
+      const fallback = headers.filter((col) => !hiddenPatterns.test(col));
+      const selected = fromPriority.length ? fromPriority : fallback;
+      return selected.slice(0, 12);
+    }
+
+    function renderVehicleColumnSelector() {
+      if (!ids.vehicleColumnsMenu) {
+        return;
+      }
+      const visible = new Set(state.vehicleVisibleColumns);
+      const count = state.vehicleVisibleColumns.length;
+      ids.vehicleColumnsToggle.textContent = `Colunas (${count})`;
+
+      const selectableColumns = [...state.vehicleColumns, vehicleRouteColumn, vehicleWhatsAppColumn]
+        .sort((a, b) => getVehicleColumnLabel(a).localeCompare(getVehicleColumnLabel(b), "pt-BR"));
+      const options = selectableColumns.map((col) => `
+        <label class="column-item" data-search="${escapeAttribute(getVehicleColumnLabel(col).toLowerCase())}" title="${escapeAttribute(getVehicleColumnLabel(col))}">
+          <input type="checkbox" data-col="${escapeAttribute(col)}" ${visible.has(col) ? "checked" : ""}>
+          <span>${escapeHtml(getVehicleColumnLabel(col))}</span>
+        </label>
+      `).join("");
+
+      ids.vehicleColumnsMenu.innerHTML = `
+        <div class="column-menu-head">
+          <span>Mostrar colunas</span>
+          <div class="column-menu-actions">
+            <button type="button" data-cols-action="essenciais">Essenciais</button>
+            <button type="button" data-cols-action="todas">Todas</button>
+          </div>
+        </div>
+        <input type="text" class="column-search" placeholder="Buscar coluna...">
+        <div class="column-items">${options}</div>
+      `;
+
+      ids.vehicleColumnsMenu.querySelectorAll("input[data-col]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const selected = [...ids.vehicleColumnsMenu.querySelectorAll("input[data-col]:checked")]
+            .map((item) => item.dataset.col)
+            .filter((col) => state.vehicleColumns.includes(col) || col === vehicleRouteColumn || col === vehicleWhatsAppColumn);
+
+          if (!selected.length) {
+            input.checked = true;
+            return;
+          }
+
+          state.vehicleVisibleColumns = selected;
+          renderDashboard();
+        });
+      });
+
+      ids.vehicleColumnsMenu.querySelectorAll("button[data-cols-action]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const action = btn.dataset.colsAction;
+          if (action === "essenciais") {
+            state.vehicleVisibleColumns = [...getDefaultVisibleVehicleColumns(state.vehicleColumns), vehicleRouteColumn, vehicleWhatsAppColumn];
+          }
+          if (action === "todas") {
+            state.vehicleVisibleColumns = [...state.vehicleColumns, vehicleRouteColumn, vehicleWhatsAppColumn];
+          }
+          renderDashboard();
+        });
+      });
+
+      if (!ids.vehicleColumnsMenu._searchListener) {
+        ids.vehicleColumnsMenu._searchListener = true;
+        ids.vehicleColumnsMenu.addEventListener("input", (e) => {
+          const input = e.target.closest(".column-search");
+          if (!input) return;
+          const filter = input.value.toLowerCase();
+          ids.vehicleColumnsMenu.querySelectorAll(".column-item").forEach((item) => {
+            const searchText = item.dataset.search || item.textContent.toLowerCase();
+            item.hidden = !searchText.includes(filter);
+          });
+        });
+      }
+    }
+
+    function populateFilters() {
+      state.filterOptions.state = uniqueNonEmpty(state.rows.map(getVehicleState));
+      state.filterOptions.provider = uniqueNonEmpty(state.rows.map((row) => normalizeCell(row["Prestador_1_Nome"])));
+      state.filterOptions.tracker = uniqueNonEmpty(state.rows.map((row) => normalizeCell(firstValue(row, candidateTrackerColumns))));
+
+      for (const key of defaultFilterKeys) {
+        state.filterSelections[key] = state.filterSelections[key].filter((value) => state.filterOptions[key].includes(value));
+      }
+
+      for (const col of state.dynamicFilterKeys) {
+        state.dynamicFilterOptions[col] = uniqueNonEmpty(state.rows.map((row) => normalizeCell(row[col])));
+        state.dynamicFilterSelections[col] = (state.dynamicFilterSelections[col] || []).filter((v) => state.dynamicFilterOptions[col].includes(v));
+      }
+
+      renderFilterMenu("state");
+      renderFilterMenu("provider");
+      renderFilterMenu("tracker");
+      renderDynamicFilters();
+    }
+
+    function getFilterPlaceholder(filterKey) {
+      if (filterKey === "state") return "Todos os estados";
+      if (filterKey === "provider") return "Todos os prestadores";
+      if (filterKey === "tracker") return "Todos";
+      return "Todas as instituições";
+    }
+
+    function getFilterTitle(filterKey) {
+      if (filterKey === "state") return "Selecionar UFs";
+      if (filterKey === "provider") return "Selecionar prestadores";
+      if (filterKey === "tracker") return "Selecionar obrigatório rastreador";
+      return "Selecionar instituições";
+    }
+
+    function renderFilterToggle(filterKey) {
+      const button = ids[`${filterKey}Filter`];
+      const selected = state.filterSelections[filterKey];
+      const placeholder = getFilterPlaceholder(filterKey);
+      const displaySingle = (value) => filterKey === "state" ? getStateDisplayName(value) : value;
+      const label = !selected.length
+        ? placeholder
+        : selected.length === 1
+          ? displaySingle(selected[0])
+          : `${selected.length} selecionados`;
+
+      button.innerHTML = `
+        <span class="filter-multi-toggle-label">${escapeHtml(label)}</span>
+        <span class="filter-multi-toggle-meta">
+          ${selected.length ? `<span class="filter-multi-clear" role="button" tabindex="0" data-filter-clear="${escapeAttribute(filterKey)}" aria-label="Limpar filtro">×</span>` : ""}
+          <span>▾</span>
+        </span>
+      `;
+
+      const clearBtn = button.querySelector("[data-filter-clear]");
+      if (clearBtn) {
+        const clearCurrentFilter = (event) => {
+          event.stopPropagation();
+          state.filterSelections[filterKey] = [];
+          renderFilterMenu(filterKey);
+          applyFilters();
+        };
+        clearBtn.addEventListener("click", clearCurrentFilter);
+        clearBtn.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            clearCurrentFilter(event);
+          }
+        });
+      }
+    }
+
+    function toggleFilterMenu(filterKey, isDynamic = false) {
+      for (const key of defaultFilterKeys) {
+        const menu = ids[`${key}FilterMenu`];
+        if (key !== filterKey) {
+          menu.hidden = true;
+        }
+      }
+      for (const col of state.dynamicFilterKeys) {
+        const menu = document.getElementById(getDynamicFilterMenuId(col));
+        if (col !== filterKey && menu) {
+          menu.hidden = true;
+        }
+      }
+      const menu = isDynamic
+        ? document.getElementById(getDynamicFilterMenuId(filterKey))
+        : ids[`${filterKey}FilterMenu`];
+      menu.hidden = !menu.hidden;
+      if (!menu.hidden) {
+        const searchInput = menu.querySelector("input[data-filter-search], input[data-dyn-filter-search]");
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+    }
+
+    function renderFilterMenu(filterKey, searchTerm = "") {
+      const menu = ids[`${filterKey}FilterMenu`];
+      const options = state.filterOptions[filterKey];
+      const selected = new Set(state.filterSelections[filterKey]);
+      const normalizedSearch = searchTerm.trim().toLowerCase();
+      const matchesSearch = (value) => {
+        if (value.toLowerCase().includes(normalizedSearch)) return true;
+        if (filterKey === "state" && getStateDisplayName(value).toLowerCase().includes(normalizedSearch)) return true;
+        return false;
+      };
+      const filteredOptions = normalizedSearch
+        ? options.filter((value) => matchesSearch(value))
+        : options;
+
+      renderFilterToggle(filterKey);
+
+      const makeDisplay = (value) => filterKey === "state" ? getStateDisplayName(value) : value;
+      const items = filteredOptions.length
+        ? filteredOptions.map((value) => `
+            <label class="column-item" title="${escapeAttribute(makeDisplay(value))}">
+              <input type="checkbox" data-filter-option="${escapeAttribute(filterKey)}" value="${escapeAttribute(value)}" ${selected.has(value) ? "checked" : ""}>
+              <span>${escapeHtml(makeDisplay(value))}</span>
+            </label>
+          `).join("")
+        : `<div class="filter-menu-empty">Nenhuma opção encontrada.</div>`;
+
+      menu.innerHTML = `
+        <div class="column-menu-head">
+          <span>${escapeHtml(getFilterTitle(filterKey))}</span>
+          <div class="column-menu-actions">
+            <button type="button" data-filter-action="all" data-filter-key="${escapeAttribute(filterKey)}">Todas</button>
+            <button type="button" data-filter-action="clear" data-filter-key="${escapeAttribute(filterKey)}">Limpar</button>
+          </div>
+        </div>
+        <input class="filter-menu-search" type="text" data-filter-search="${escapeAttribute(filterKey)}" value="${escapeAttribute(searchTerm)}" placeholder="Buscar...">
+        <div class="filter-menu-list">${items}</div>
+      `;
+
+      menu.querySelectorAll("input[data-filter-option]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const next = [...menu.querySelectorAll("input[data-filter-option]:checked")].map((item) => item.value);
+          const preserved = state.filterSelections[filterKey].filter((value) => !filteredOptions.includes(value));
+          state.filterSelections[filterKey] = [...new Set([...preserved, ...next])];
+          if (filterKey === "provider") {
+            if (!state.filterSelections.provider.length) {
+              state.providerDetail = "";
+              state.chartSelections.provider = "";
+              document.getElementById("providerDetail").hidden = true;
+            } else if (!state.filterSelections.provider.includes(state.providerDetail)) {
+              state.providerDetail = state.filterSelections.provider[0];
+              state.chartSelections.provider = state.providerDetail;
+            }
+          }
+          renderFilterMenu(filterKey, menu.querySelector("input[data-filter-search]")?.value || "");
+          applyFilters();
+          menu.hidden = false;
+        });
+      });
+
+      const searchInput = menu.querySelector("input[data-filter-search]");
+      searchInput.addEventListener("input", () => {
+        const value = searchInput.value;
+        renderFilterMenu(filterKey, value);
+        menu.hidden = false;
+        const restored = menu.querySelector("input[data-filter-search]");
+        if (restored) {
+          restored.focus();
+          restored.setSelectionRange(restored.value.length, restored.value.length);
+        }
+      });
+
+      menu.querySelectorAll("button[data-filter-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.filterAction === "all") {
+            state.filterSelections[filterKey] = [...state.filterOptions[filterKey]];
+          }
+          if (button.dataset.filterAction === "clear") {
+            state.filterSelections[filterKey] = [];
+          }
+          renderFilterMenu(filterKey, menu.querySelector("input[data-filter-search]")?.value || "");
+          applyFilters();
+          menu.hidden = false;
+        });
+      });
+    }
+
+    function getDynamicFilterToggleId(col) {
+      return "dyn-toggle-" + col.replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+    function getDynamicFilterMenuId(col) {
+      return "dyn-menu-" + col.replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+    function getDynamicFilterContainerId(col) {
+      return "dyn-filter-" + col.replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+
+    function renderAddFilterMenu(searchTerm) {
+      const usedColumns = new Set();
+      const defaultColKeys = [...candidateStateColumns, "Prestador_1_Nome", ...candidateTrackerColumns];
+      defaultColKeys.forEach((c) => usedColumns.add(c.toLowerCase()));
+      state.dynamicFilterKeys.forEach((c) => usedColumns.add(c.toLowerCase()));
+
+      let available = state.vehicleColumns.filter((col) => {
+        const low = col.toLowerCase();
+        return !usedColumns.has(low) && !low.includes("endereco") && !low.includes("endereço") && !low.includes("latitude") && !low.includes("longitude") && !low.includes("cep") && !low.includes("cnpj") && !low.includes("cpf");
+      });
+
+      available = [...new Set(available)];
+
+      const term = (searchTerm || "").trim().toLowerCase();
+      if (term) {
+        available = available.filter((col) => col.toLowerCase().includes(term));
+      }
+
+      available.sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+      ids.addFilterList.innerHTML = available.length
+        ? available.map((col) => `
+            <label class="column-item" title="${escapeAttribute(col)}">
+              <input type="checkbox" data-add-filter-col="${escapeAttribute(col)}">
+              <span>${escapeHtml(col)}</span>
+            </label>
+          `).join("")
+        : '<div class="filter-menu-empty">Nenhuma coluna disponível.</div>';
+
+      ids.addFilterList.querySelectorAll("input[data-add-filter-col]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const col = input.dataset.addFilterCol;
+          if (input.checked) {
+            addDynamicFilter(col);
+          }
+          ids.addFilterMenu.hidden = true;
+          ids.addFilterSearch.value = "";
+        });
+      });
+    }
+
+    function addDynamicFilter(col) {
+      if (state.dynamicFilterKeys.includes(col)) return;
+      state.dynamicFilterKeys.push(col);
+      state.dynamicFilterSelections[col] = [];
+      state.dynamicFilterOptions[col] = uniqueNonEmpty(state.rows.map((row) => normalizeCell(row[col])));
+      renderDynamicFilters();
+      applyFilters();
+    }
+
+    function removeDynamicFilter(col) {
+      state.dynamicFilterKeys = state.dynamicFilterKeys.filter((k) => k !== col);
+      delete state.dynamicFilterSelections[col];
+      delete state.dynamicFilterOptions[col];
+      renderDynamicFilters();
+      applyFilters();
+    }
+
+    function renderDynamicFilters() {
+      const existing = ids.filtersGrid.querySelectorAll("[data-dynamic-filter]");
+      existing.forEach((el) => el.remove());
+
+      for (const col of state.dynamicFilterKeys) {
+        const div = document.createElement("div");
+        div.className = "filter";
+        div.id = getDynamicFilterContainerId(col);
+        div.setAttribute("data-dynamic-filter", col);
+        div.innerHTML = `
+          <label>${escapeHtml(col)}
+            <button type="button" class="btn-icon" style="font-size:14px;padding:2px 4px;vertical-align:middle;" title="Remover filtro" data-dyn-remove="${escapeAttribute(col)}">×</button>
+          </label>
+          <div class="filter-menu-wrap">
+            <button id="${getDynamicFilterToggleId(col)}" class="filter-multi-toggle" type="button"></button>
+            <div id="${getDynamicFilterMenuId(col)}" class="filter-menu" hidden></div>
+          </div>
+        `;
+        ids.filtersGrid.insertBefore(div, ids.filterActions);
+
+        div.querySelector("[data-dyn-remove]").addEventListener("click", () => {
+          removeDynamicFilter(col);
+        });
+
+        document.getElementById(getDynamicFilterToggleId(col)).addEventListener("click", () => {
+          toggleFilterMenu(col, true);
+        });
+
+        renderDynamicFilterToggle(col);
+        renderDynamicFilterMenu(col);
+      }
+    }
+
+    function renderDynamicFilterToggle(col) {
+      const button = document.getElementById(getDynamicFilterToggleId(col));
+      if (!button) return;
+      const selected = state.dynamicFilterSelections[col] || [];
+      const label = !selected.length
+        ? "Todos"
+        : selected.length === 1
+          ? selected[0]
+          : `${selected.length} selecionados`;
+
+      button.innerHTML = `
+        <span class="filter-multi-toggle-label">${escapeHtml(label)}</span>
+        <span class="filter-multi-toggle-meta">
+          ${selected.length ? `<span class="filter-multi-clear" role="button" tabindex="0" data-dyn-filter-clear="${escapeAttribute(col)}" aria-label="Limpar filtro">×</span>` : ""}
+          <span>▾</span>
+        </span>
+      `;
+
+      const clearBtn = button.querySelector("[data-dyn-filter-clear]");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          state.dynamicFilterSelections[col] = [];
+          renderDynamicFilterMenu(col);
+          renderDynamicFilterToggle(col);
+          applyFilters();
+        });
+      }
+    }
+
+    function renderDynamicFilterMenu(col, searchTerm) {
+      const menu = document.getElementById(getDynamicFilterMenuId(col));
+      if (!menu) return;
+      const options = state.dynamicFilterOptions[col] || [];
+      const selected = new Set(state.dynamicFilterSelections[col] || []);
+      const normalizedSearch = (searchTerm || "").trim().toLowerCase();
+      const filteredOptions = normalizedSearch
+        ? options.filter((v) => v.toLowerCase().includes(normalizedSearch))
+        : options;
+
+      renderDynamicFilterToggle(col);
+
+      const items = filteredOptions.length
+        ? filteredOptions.map((value) => `
+            <label class="column-item" title="${escapeAttribute(value)}">
+              <input type="checkbox" data-dyn-filter-option="${escapeAttribute(col)}" value="${escapeAttribute(value)}" ${selected.has(value) ? "checked" : ""}>
+              <span>${escapeHtml(value)}</span>
+            </label>
+          `).join("")
+        : '<div class="filter-menu-empty">Nenhuma opção encontrada.</div>';
+
+      menu.innerHTML = `
+        <div class="column-menu-head">
+          <span>${escapeHtml(col)}</span>
+          <div class="column-menu-actions">
+            <button type="button" data-dyn-filter-action="all" data-dyn-filter-key="${escapeAttribute(col)}">Todas</button>
+            <button type="button" data-dyn-filter-action="clear" data-dyn-filter-key="${escapeAttribute(col)}">Limpar</button>
+          </div>
+        </div>
+        <input class="filter-menu-search" type="text" data-dyn-filter-search="${escapeAttribute(col)}" value="${escapeAttribute(searchTerm || "")}" placeholder="Buscar...">
+        <div class="filter-menu-list">${items}</div>
+      `;
+
+      menu.querySelectorAll("input[data-dyn-filter-option]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const next = [...menu.querySelectorAll("input[data-dyn-filter-option]:checked")].map((item) => item.value);
+          const preserved = (state.dynamicFilterSelections[col] || []).filter((v) => !filteredOptions.includes(v));
+          state.dynamicFilterSelections[col] = [...new Set([...preserved, ...next])];
+          renderDynamicFilterMenu(col, menu.querySelector("input[data-dyn-filter-search]")?.value || "");
+          applyFilters();
+          menu.hidden = false;
+        });
+      });
+
+      const searchInput = menu.querySelector("input[data-dyn-filter-search]");
+      if (searchInput) {
+        searchInput.addEventListener("input", () => {
+          renderDynamicFilterMenu(col, searchInput.value);
+          menu.hidden = false;
+          const restored = menu.querySelector("input[data-dyn-filter-search]");
+          if (restored) {
+            restored.focus();
+            restored.setSelectionRange(restored.value.length, restored.value.length);
+          }
+        });
+      }
+
+      menu.querySelectorAll("button[data-dyn-filter-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.dynFilterAction === "all") {
+            state.dynamicFilterSelections[col] = [...(state.dynamicFilterOptions[col] || [])];
+          }
+          if (button.dataset.dynFilterAction === "clear") {
+            state.dynamicFilterSelections[col] = [];
+          }
+          renderDynamicFilterMenu(col, menu.querySelector("input[data-dyn-filter-search]")?.value || "");
+          applyFilters();
+          menu.hidden = false;
+        });
+      });
+    }
+
+    function clearFilters(apply = true) {
+      ids.searchInput.value = "";
+      state.filterSelections.state = [];
+      state.filterSelections.provider = [];
+      state.filterSelections.tracker = [];
+      state.chartSelections.provider = "";
+      state.chartSelections.consultor = "";
+      state.chartSelections.regional = "";
+      state.chartSelections.distance = "";
+      state.chartSelections.tipo = "";
+      state.providerDetail = "";
+      for (const col of state.dynamicFilterKeys) {
+        state.dynamicFilterSelections[col] = [];
+        renderDynamicFilterMenu(col);
+      }
+      renderFilterMenu("state");
+      renderFilterMenu("provider");
+      renderFilterMenu("tracker");
+      if (apply) {
+        applyFilters();
+      } else {
+        applyFilters();
+      }
+    }
+
+    function getChartSelectionValue(row, chartKey) {
+      if (chartKey === "provider") {
+        return normalizeCell(row["Prestador_1_Nome"]);
+      }
+      if (chartKey === "consultor") {
+        return normalizeCell(firstValue(row, candidateConsultorColumns)) || "Não informado";
+      }
+      if (chartKey === "regional") {
+        return normalizeCell(firstValue(row, candidateRegionalColumns)) || "Não informado";
+      }
+      if (chartKey === "distance") {
+        return getDistanceBucketLabel(row);
+      }
+      if (chartKey === "tipo") {
+        return normalizeCell(row["Tipo"]) || normalizeCell(row["tipo"]) || "";
+      }
+      return "";
+    }
+
+    function getRowsForCurrentFilters(options = {}) {
+      const { excludeChartKey = "" } = options;
+      const query = ids.searchInput.value.trim().toLowerCase();
+      const stateFilter = state.filterSelections.state;
+      const providerFilter = state.filterSelections.provider;
+      const trackerFilter = state.filterSelections.tracker;
+
+      return state.rows.filter((row) => {
+        if (stateFilter.length && !stateFilter.includes(getVehicleState(row))) {
+          return false;
+        }
+
+        if (providerFilter.length && !providerFilter.includes(normalizeCell(row["Prestador_1_Nome"]))) {
+          return false;
+        }
+
+        if (trackerFilter.length && !trackerFilter.includes(normalizeCell(firstValue(row, candidateTrackerColumns)))) {
+          return false;
+        }
+
+        for (const col of state.dynamicFilterKeys) {
+          const sel = state.dynamicFilterSelections[col];
+          if (sel && sel.length && !sel.includes(normalizeCell(row[col]))) {
+            return false;
+          }
+        }
+
+        for (const [chartKey, selectedValue] of Object.entries(state.chartSelections)) {
+          if (!selectedValue || chartKey === excludeChartKey) {
+            continue;
+          }
+          if (getChartSelectionValue(row, chartKey) !== selectedValue) {
+            return false;
+          }
+        }
+
+        if (!query) {
+          return true;
+        }
+
+        return Object.values(row).some((value) => normalizeCell(value).toLowerCase().includes(query));
+      });
+    }
+
+    function applyFilters() {
+      state.filteredRows = getRowsForCurrentFilters();
+
+      renderDashboard();
+    }
+
+    function renderDashboard() {
+      const rows = state.filteredRows;
+      const providerChartRows = getRowsForCurrentFilters({ excludeChartKey: "provider" });
+      const consultorChartRows = getRowsForCurrentFilters({ excludeChartKey: "consultor" });
+      const regionalChartRows = getRowsForCurrentFilters({ excludeChartKey: "regional" });
+      const distanceChartRows = getRowsForCurrentFilters({ excludeChartKey: "distance" });
+      const tipoChartRows = getRowsForCurrentFilters({ excludeChartKey: "tipo" });
+      const providerStats = buildProviderStats(rows);
+      const stateStats = buildGroupedStats(rows, getVehicleState);
+      const consultorStats = buildGroupedStats(rows, (row) => normalizeCell(firstValue(row, candidateConsultorColumns)) || "Não informado");
+      const regionalStats = buildGroupedStats(rows, (row) => normalizeCell(firstValue(row, candidateRegionalColumns)) || "Não informado");
+      const providerChartStats = buildProviderStats(providerChartRows);
+      const consultorChartStats = buildGroupedStats(consultorChartRows, (row) => normalizeCell(firstValue(row, candidateConsultorColumns)) || "Não informado");
+      const regionalChartStats = buildGroupedStats(regionalChartRows, (row) => normalizeCell(firstValue(row, candidateRegionalColumns)) || "Não informado");
+      const distanceStats = buildDistanceBuckets(distanceChartRows);
+
+      const tipoStats = buildGroupedStats(tipoChartRows, (row) => {
+        const tipo = normalizeCell(row["Tipo"]) || normalizeCell(row["tipo"]);
+        return tipo || "Não informado";
+      });
+
+      renderKpis(rows, providerStats, stateStats);
+      renderTipoChart(ids.tipoChart, tipoStats, tipoChartRows.length);
+      renderBarChart(ids.providerChart, providerChartStats, providerChartRows.length, {
+        chartKey: "provider",
+        alternate: false,
+      });
+      renderBarChart(ids.consultorChart, consultorChartStats, consultorChartRows.length, {
+        chartKey: "consultor",
+        alternate: false,
+      });
+      renderBarChart(ids.regionalChart, regionalChartStats, regionalChartRows.length, {
+        chartKey: "regional",
+        alternate: true,
+      });
+      renderDistanceChart(distanceStats, distanceChartRows.length);
+      renderProviderTable(providerStats, rows.length);
+      renderVehicleTable(rows);
+      if (state.stateView === "map") {
+        renderBrazilMap(rows);
+      } else {
+        if (state.brazilMap) {
+          state.brazilMap.remove();
+          state.brazilMap = null;
+        }
+        renderBrazilChart(stateStats, rows.length);
+      }
+      renderProviderDetail();
+
+      ids.providerChartMeta.textContent = `${providerChartStats.length} prestador(es)`;
+      ids.stateChartMeta.textContent = `${stateStats.length} UF(s)`;
+      ids.tipoChartMeta.textContent = `${tipoStats.length} tipo(s)`;
+      ids.providerTableMeta.textContent = `${providerStats.length} linha(s)`;
+      ids.vehicleTableMeta.textContent = `${rows.length} linha(s) • ${state.vehicleVisibleColumns.length} coluna(s)`;
+    }
+
+    function renderProviderDetail() {
+      const panel = document.getElementById("providerDetail");
+      const name = state.providerDetail;
+      if (!name) {
+        panel.hidden = true;
+        return;
+      }
+
+      const row = state.rows.find((r) => normalizeCell(r["Prestador_1_Nome"]) === name);
+      if (!row) {
+        panel.hidden = true;
+        return;
+      }
+
+      const pfx = "Prestador_1_";
+
+      function pCell(key) {
+        return normalizeCell(row[pfx + key] || "");
+      }
+
+      const cnpj = pCell("CNPJ_CPF");
+      const titular = pCell("Contato");
+      const endereco = pCell("Endereco");
+      const cidade = pCell("Cidade");
+      const uf = pCell("UF") || pCell("uf");
+      const obs = pCell("Observacao");
+      const estado = uf;
+
+      let providerPhone = pCell("Telefone") || pCell("Telefone_2");
+      let providerPhoneDigits = providerPhone ? providerPhone.replace(/\D/g, "") : "";
+      if (providerPhoneDigits.length >= 10 && providerPhoneDigits.length <= 11) {
+        if (!providerPhoneDigits.startsWith("55")) providerPhoneDigits = "55" + providerPhoneDigits;
+      }
+      const providerWaUrl = providerPhoneDigits.length >= 10 ? `https://wa.me/${providerPhoneDigits}` : "";
+
+      const whatsappSvg = `<svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+
+      const googleMapsUrl = endereco ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}` : "";
+
+      const fields = [
+        { label: "CPF / CNPJ", value: cnpj },
+        { label: "Titular", value: titular },
+        { label: "Estado", value: estado },
+        { label: "Endereço", value: endereco, href: googleMapsUrl },
+        { label: "Observação", value: obs },
+      ];
+
+      panel.innerHTML = `
+        <div class="provider-detail-card">
+          <div class="provider-detail-header">
+            <h3>${escapeHtml(name)}</h3>
+            <button class="provider-detail-close" id="providerDetailClose" type="button" aria-label="Fechar">×</button>
+          </div>
+          ${providerWaUrl ? `
+            <a class="provider-whatsapp-link" href="${escapeAttribute(providerWaUrl)}" target="_blank" rel="noreferrer noopener">
+              <span class="provider-whatsapp-icon">${whatsappSvg}</span>
+              Falar com prestador
+            </a>
+          ` : providerPhone ? `<div style="font-weight:700">${escapeHtml(providerPhone)}</div>` : ""}
+          <div class="provider-detail-grid">
+            ${fields.filter((f) => f.value).map((f) => `
+              <div class="provider-detail-field">
+                <span class="provider-detail-field-label">${escapeHtml(f.label)}</span>
+                <span class="provider-detail-field-value">${f.href ? `<a href="${escapeAttribute(f.href)}" target="_blank" rel="noreferrer noopener">${escapeHtml(f.value)}</a>` : escapeHtml(f.value)}</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+      panel.hidden = false;
+
+      const closeBtn = panel.querySelector("#providerDetailClose");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeProviderDetail();
+        });
+      }
+    }
+
+    function closeProviderDetail() {
+      state.providerDetail = "";
+      state.chartSelections.provider = "";
+      state.filterSelections.provider = [];
+      renderFilterMenu("provider");
+      document.getElementById("providerDetail").hidden = true;
+      applyFilters();
+    }
+
+    document.addEventListener("click", (e) => {
+      const panel = document.getElementById("providerDetail");
+      if (panel.hidden) return;
+      if (e.target === panel) {
+        closeProviderDetail();
+      }
+    });
+
+    function renderKpis(rows, providerStats, stateStats) {
+      ids.kpiPlacas.textContent = formatNumber(rows.length);
+      ids.kpiPrestadores.textContent = formatNumber(providerStats.length);
+      ids.kpiEstados.textContent = formatNumber(stateStats.length);
+
+      const topProvider = providerStats[0];
+      const topShare = rows.length && topProvider ? (topProvider.placas / rows.length) * 100 : 0;
+      ids.kpiTop1Share.textContent = `${formatNumber(topShare, 1)}%`;
+      ids.kpiTop1Detail.textContent = topProvider
+        ? `${topProvider.label}: ${formatNumber(topProvider.placas)} placa(s) do recorte.`
+        : "Sem prestador líder no recorte atual.";
+
+      const distances = rows
+        .map((row) => parseNumber(row["Prestador_1_Distancia_km"] || row["Prestador_1_Dist_km"]))
+        .filter((value) => Number.isFinite(value));
+
+      const avg = distances.length
+        ? distances.reduce((sum, value) => sum + value, 0) / distances.length
+        : 0;
+    }
+
+    function buildProviderStats(rows) {
+      const map = new Map();
+      for (const row of rows) {
+        const provider = normalizeCell(row["Prestador_1_Nome"]) || "Sem prestador";
+        const current = map.get(provider) || {
+          label: provider,
+          cnpj: normalizeCell(row["Prestador_1_CNPJ_CPF"]) || normalizeCell(row["Prestador_1_CEP"]),
+          placas: 0,
+          distanceTotal: 0,
+          distanceCount: 0,
+          estado: normalizeCell(row["Prestador_1_UF"]),
+        };
+        current.placas += 1;
+        const distance = parseNumber(row["Prestador_1_Distancia_km"] || row["Prestador_1_Dist_km"]);
+        if (Number.isFinite(distance)) {
+          current.distanceTotal += distance;
+          current.distanceCount += 1;
+        }
+        map.set(provider, current);
+      }
+
+      const items = [...map.values()];
+
+      return sortItems(items, state.sortProvider.key, state.sortProvider.direction, {
+        placas: (item) => item.placas,
+        percentual: (item) => item.placas,
+        label: (item) => item.label,
+      });
+    }
+
+    function buildGroupedStats(rows, getter) {
+      const counts = new Map();
+      for (const row of rows) {
+        const key = getter(row) || "Não informado";
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
+
+      return [...counts.entries()]
+        .map(([label, placas]) => ({ label, placas }))
+        .sort((a, b) => b.placas - a.placas || a.label.localeCompare(b.label));
+    }
+
+    function buildDistanceBuckets(rows) {
+      const buckets = distanceBucketDefinitions.map((bucket) => ({ ...bucket, placas: 0 }));
+
+      for (const row of rows) {
+        const distance = parseNumber(row["Prestador_1_Distancia_km"] || row["Prestador_1_Dist_km"]);
+        if (!Number.isFinite(distance)) {
+          continue;
+        }
+        const bucket = buckets.find((item) => distance >= item.min && distance <= item.max);
+        if (bucket) {
+          bucket.placas += 1;
+        }
+      }
+
+      return buckets;
+    }
+
+    function getDistanceBucketLabel(row) {
+      const distance = parseNumber(row["Prestador_1_Distancia_km"] || row["Prestador_1_Dist_km"]);
+      if (!Number.isFinite(distance)) {
+        return "";
+      }
+
+      const bucket = distanceBucketDefinitions.find((item) => distance >= item.min && distance <= item.max);
+      return bucket ? bucket.label : "";
+    }
+
+    function renderBarChart(container, items, total, options = {}) {
+      const {
+        alternate = false,
+        chartKey = "",
+        visibleCount = 0,
+        labelSub = "",
+      } = options;
+
+      if (!items.length) {
+        container.innerHTML = '<div class="empty">Nenhum dado para exibir neste recorte.</div>';
+        return;
+      }
+
+      const activeSelection = chartKey ? state.chartSelections[chartKey] : "";
+      const anyFilterActive = Object.values(state.chartSelections).some((v) => v !== "");
+      const max = Math.max(...items.map((item) => item.placas), 1);
+      const renderedItems = visibleCount > 0 ? items.slice(0, visibleCount) : items;
+
+      container.innerHTML = renderedItems.map((item) => {
+        const percentOfMax = (item.placas / max) * 100;
+        const percentOfTotal = total ? (item.placas / total) * 100 : 0;
+        const isActive = Boolean(chartKey) && activeSelection === item.label;
+        const hasOwnFilter = Boolean(chartKey) && activeSelection !== "";
+        const classActive = isActive ? ' filter-active' : '';
+        const classClickable = chartKey ? ' clickable' : '';
+        const rowOpacity = (hasOwnFilter || anyFilterActive) && !isActive ? '0.3' : '1';
+        return `
+          <div class="bar-row${classClickable}${classActive}" data-chart-key="${escapeAttribute(chartKey)}" data-chart-value="${escapeAttribute(item.label)}" style="opacity:${rowOpacity};transition:opacity 0.2s">
+            <div class="bar-label" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}${labelSub && item[labelSub] ? ` <span style="font-weight:400;font-size:11px;color:var(--muted)">— ${escapeHtml(item[labelSub])}</span>` : ""}</div>
+            <div class="bar-track">
+              <div class="bar-fill ${alternate ? "alt" : ""}" style="width:${percentOfMax}%"></div>
+            </div>
+            <div class="bar-value">${formatNumber(item.placas)} • ${formatNumber(percentOfTotal, 1)}%</div>
+          </div>
+        `;
+      }).join("");
+
+      if (chartKey) {
+        container.querySelectorAll('.bar-row.clickable').forEach((row) => {
+          row.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const selectedChartKey = row.dataset.chartKey;
+            const selectedValue = row.dataset.chartValue;
+            if (state.chartSelections[selectedChartKey] === selectedValue) {
+              state.chartSelections[selectedChartKey] = "";
+            } else {
+              state.chartSelections[selectedChartKey] = selectedValue;
+            }
+            if (selectedChartKey === "provider") {
+              if (state.chartSelections.provider) {
+                state.filterSelections.provider = [state.chartSelections.provider];
+                renderFilterMenu("provider");
+              } else {
+                state.filterSelections.provider = [];
+                renderFilterMenu("provider");
+              }
+              state.providerDetail = state.chartSelections.provider;
+            }
+            applyFilters();
+          });
+        });
+      }
+    }
+
+    function renderDistanceChart(items, total) {
+      renderBarChart(ids.distanceChart, items.filter((item) => item.placas > 0), total, {
+        alternate: true,
+        chartKey: "distance",
+      });
+    }
+
+    function renderTipoChart(container, items, total) {
+      const colors = { Carro: "var(--accent)", Moto: "var(--accent-2)", Caminhão: "#7c5ba0" };
+      if (!items.length) {
+        container.innerHTML = '<div class="empty">Nenhum dado para exibir neste recorte.</div>';
+        return;
+      }
+      const segments = items.map((item) => {
+        const pct = total ? (item.placas / total) * 100 : 0;
+        return {
+          label: item.label,
+          placas: item.placas,
+          pct,
+          color: colors[item.label] || "var(--accent)",
+        };
+      });
+      const activeTipo = state.chartSelections.tipo;
+      const anyFilterActive = Object.values(state.chartSelections).some((v) => v !== "");
+      container.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;height:36px;border-radius:999px;overflow:hidden;background:#efe5d8;cursor:pointer">
+            ${segments.map((s) => `
+              <div data-tipo="${escapeAttribute(s.label)}" style="width:${s.pct}%;height:100%;background:${s.color};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;opacity:${(activeTipo || anyFilterActive) && (!activeTipo || activeTipo !== s.label) ? "0.3" : "1"};transition:opacity 0.2s" title="${escapeHtml(s.label)}: ${formatNumber(s.placas)} (${formatNumber(s.pct,1)}%)">
+                <span style="font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px">${formatNumber(s.placas)} • ${formatNumber(s.pct,1)}%</span>
+              </div>
+            `).join("")}
+          </div>
+          <div style="display:flex">
+            ${segments.map((s) => `
+              <div style="width:${s.pct}%;text-align:center;font-size:12px;font-weight:600;color:var(--text);opacity:${(activeTipo || anyFilterActive) && (!activeTipo || activeTipo !== s.label) ? "0.3" : "1"};transition:opacity 0.2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px">${escapeHtml(s.label)}</div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+      container.querySelectorAll("[data-tipo]").forEach((el) => {
+        el.addEventListener("click", () => {
+          const value = el.dataset.tipo;
+          state.chartSelections.tipo = state.chartSelections.tipo === value ? "" : value;
+          applyFilters();
+        });
+      });
+    }
+
+    function renderProviderTable(providerStats, total) {
+      const columns = [
+        { key: "label", label: "Prestador" },
+        { key: "cnpj", label: "CNPJ/CPF" },
+        { key: "estado", label: "UF" },
+        { key: "placas", label: "Placas" },
+        { key: "percentual", label: "% do Total" },
+      ];
+
+      const header = `<thead><tr>${columns.map((col) => {
+        const isActive = state.sortProvider.key === col.key;
+        const isAsc = state.sortProvider.direction === "asc";
+        const indicator = isActive ? (isAsc ? "▲" : "▼") : "↕";
+        const ariaSort = isActive ? (isAsc ? "ascending" : "descending") : "none";
+        return `<th data-provider-sort="${col.key}" aria-sort="${ariaSort}"><span class="sortable-head">${col.label}<span class="sort-indicator">${indicator}</span></span></th>`;
+      }).join("")}</tr></thead>`;
+
+      const bodyRows = providerStats.map((item) => {
+        const percentual = total ? (item.placas / total) * 100 : 0;
+        return `
+          <tr>
+            <td>${escapeHtml(item.label)}</td>
+            <td>${escapeHtml(item.cnpj || "-")}</td>
+            <td>${escapeHtml(item.estado || "-")}</td>
+            <td>${formatNumber(item.placas)}</td>
+            <td>${formatNumber(percentual, 1)}%</td>
+          </tr>
+        `;
+      }).join("") || `<tr><td colspan="5" class="muted">Nenhum dado disponível.</td></tr>`;
+
+      ids.providerTable.innerHTML = `${header}<tbody>${bodyRows}</tbody>`;
+      applyAdaptiveTableLayout(ids.providerTable, columns.length, {
+        compactLimit: 5,
+        minWidth: "136px",
+      });
+      ids.providerTable.querySelectorAll("th[data-provider-sort]").forEach((th) => {
+        th.addEventListener("click", () => {
+          const key = th.dataset.providerSort;
+          if (state.sortProvider.key === key) {
+            state.sortProvider.direction = state.sortProvider.direction === "asc" ? "desc" : "asc";
+          } else {
+            state.sortProvider.key = key;
+            state.sortProvider.direction = key === "label" ? "asc" : "desc";
+          }
+          renderDashboard();
+        });
+      });
+      enableColumnResize(ids.providerTable);
+    }
+
+    function renderVehicleTable(rows) {
+      const requested = state.vehicleVisibleColumns.filter((col) => state.vehicleColumns.includes(col) || col === vehicleRouteColumn || col === vehicleWhatsAppColumn);
+      const finalColumns = requested.length ? requested : [...getDefaultVisibleVehicleColumns(state.vehicleColumns), vehicleRouteColumn, vehicleWhatsAppColumn];
+
+      const sortableColumns = finalColumns.filter((col) => col !== vehicleRouteColumn && col !== vehicleWhatsAppColumn);
+      if (!sortableColumns.includes(state.sortVehicle.key)) {
+        state.sortVehicle.key = sortableColumns[0] || "Placa";
+        state.sortVehicle.direction = "asc";
+      }
+
+      const sorted = [...rows].sort((a, b) => compareRows(a, b, state.sortVehicle.key, state.sortVehicle.direction));
+      const limited = sorted.slice(0, 300);
+
+      const header = `<thead><tr>${finalColumns.map((col) => {
+        if (col === vehicleRouteColumn || col === vehicleWhatsAppColumn) {
+          return `<th class="${escapeAttribute(getVehicleColumnClass(col))}"><span class="sortable-head">${escapeHtml(col)}</span></th>`;
+        }
+        const isActive = state.sortVehicle.key === col;
+        const isAsc = state.sortVehicle.direction === "asc";
+        const indicator = isActive ? (isAsc ? "▲" : "▼") : "↕";
+        const ariaSort = isActive ? (isAsc ? "ascending" : "descending") : "none";
+        return `<th class="${escapeAttribute(getVehicleColumnClass(col))}" data-vehicle-sort="${escapeAttribute(col)}" aria-sort="${ariaSort}"><span class="sortable-head">${escapeHtml(getVehicleColumnLabel(col))}<span class="sort-indicator">${indicator}</span></span></th>`;
+      }).join("")}</tr></thead>`;
+      const bodyRows = limited.map((row) => `
+        <tr>
+          ${finalColumns.map((col) => `<td class="${escapeAttribute(getVehicleColumnClass(col))}">${renderVehicleCell(row, col)}</td>`).join("")}
+        </tr>
+      `).join("") || `<tr><td colspan="${finalColumns.length || 1}" class="muted">Nenhuma linha disponível.</td></tr>`;
+
+      ids.vehicleTable.innerHTML = `${header}<tbody>${bodyRows}</tbody>`;
+      applyAdaptiveTableLayout(ids.vehicleTable, finalColumns.length, {
+        compactLimit: compactVehicleColumnLimit,
+        minWidth: "120px",
+      });
+      renderVehicleColumnSelector();
+      ids.vehicleTable.querySelectorAll("[data-copy-value]").forEach((element) => {
+        element.addEventListener("click", async () => {
+          await copyTextToClipboard(element.dataset.copyValue || "");
+        });
+      });
+      ids.vehicleTable.querySelectorAll("th[data-vehicle-sort]").forEach((th) => {
+        th.addEventListener("click", () => {
+          const key = th.dataset.vehicleSort;
+          if (state.sortVehicle.key === key) {
+            state.sortVehicle.direction = state.sortVehicle.direction === "asc" ? "desc" : "asc";
+          } else {
+            state.sortVehicle.key = key;
+            state.sortVehicle.direction = "asc";
+          }
+          renderDashboard();
+        });
+      });
+      enableColumnResize(ids.vehicleTable);
+    }
+
+    function getVehicleColumnLabel(col) {
+      if (col === "Prestador_1_Nome") {
+        return "Prestador";
+      }
+      if (col === "Prestador_1_Nome_Legal") {
+        return "Nome 2";
+      }
+      if (col === "Prestador_1_Nome_Fantasia") {
+        return "Nome Fantasia";
+      }
+      if (col === "Prestador_1_Endereco") {
+        return "Endereço";
+      }
+      if (col === "Prestador_1_Distancia_km" || col === "Prestador_1_Dist_km") {
+        return "Distância (KM)";
+      }
+      if (col === "Tipo") {
+        return "Tipo";
+      }
+      return col;
+    }
+
+    function getVehicleColumnClass(col) {
+      if (col === vehicleRouteColumn) {
+        return "vehicle-col-route";
+      }
+      if (col === vehicleWhatsAppColumn) {
+        return "vehicle-col-whatsapp";
+      }
+      if (isAddressColumn(col)) {
+        return "vehicle-col-address";
+      }
+      if (col === "Associado" || col === "associado") {
+        return "vehicle-col-associated";
+      }
+      if (col === "Consultor" || col === "consultor") {
+        return "vehicle-col-consultant";
+      }
+      if (col === "Instituição" || col === "Instituicao" || col === "instituicao") {
+        return "vehicle-col-institution";
+      }
+      if (col === "Prestador_1_Nome") {
+        return "vehicle-col-provider";
+      }
+      if (col === "Tipo") {
+        return "vehicle-col-tipo";
+      }
+      return "";
+    }
+
+    function isAddressColumn(col) {
+      return /endereco|endereço/i.test(String(col || ""));
+    }
+
+    function normalizeRouteAddress(address) {
+      return normalizeCell(address)
+        .replace(/\bCEP\s*:\s*/gi, "")
+        .replace(/\bS\/?N\b/gi, "")
+        .replace(/(\d{2})\.(\d{3})-?(\d{3})/g, "$1$2-$3")
+        .replace(/\s*-\s*,/g, ", ")
+        .replace(/\s+-\s+/g, " - ")
+        .replace(/\s*,\s*/g, ", ")
+        .replace(/,{2,}/g, ",")
+        .replace(/,\s*,/g, ", ")
+        .replace(/\s{2,}/g, " ")
+        .replace(/^[-,\s]+|[-,\s]+$/g, "")
+        .trim();
+    }
+
+    function buildGoogleMapsRouteUrl(origin, destination) {
+      const originValue = normalizeRouteAddress(origin);
+      const destinationValue = normalizeRouteAddress(destination);
+      if (!originValue || !destinationValue) {
+        return "";
+      }
+
+      const params = new URLSearchParams({
+        api: "1",
+        origin: originValue,
+        destination: destinationValue,
+        travelmode: "driving",
+        region: "br",
+      });
+      return `https://www.google.com/maps/dir/?${params.toString()}`;
+    }
+
+    function buildWhatsAppVehicleLink(row) {
+      const phoneCandidates = [
+        "Telefone 1", "Fone(1)", "fone_1", "fone1",
+        "Telefone 2", "Fone(2)", "fone_2", "fone2",
+        "Telefone", "Fone", "fone",
+        "Prestador_1_Telefone", "Prestador_1_Telefone_2", "Prestador_1_Contato",
+      ];
+      let phoneCol = null;
+      for (const candidate of phoneCandidates) {
+        if (state.vehicleColumns.includes(candidate)) {
+          const value = normalizeCell(row[candidate]);
+          if (value) {
+            phoneCol = candidate;
+            break;
+          }
+        }
+      }
+      if (!phoneCol) {
+        phoneCol = state.vehicleColumns.find((c) =>
+          ["contato", "telefone", "celular", "tel", "whatsapp", "whats", "fone", "phone"]
+            .some((p) => c.toLowerCase().includes(p.toLowerCase()))
+        );
+      }
+      const rawPhone = phoneCol ? normalizeCell(row[phoneCol]) : "";
+      let digits = rawPhone.replace(/\D/g, "");
+      if (digits.length === 10 || digits.length === 11) {
+        if (!digits.startsWith("55")) digits = "55" + digits;
+      }
+      if (digits.length < 12) return "";
+
+      const associateName = normalizeCell(firstValue(row, ["Associado", "associado"])) || "";
+      const providerName = normalizeCell(row["Prestador_1_Nome"]) || "";
+      const providerAddress = normalizeCell(row["Prestador_1_Endereco"]) || "";
+
+      let text = "Olá";
+      if (associateName) text += ` ${associateName}`;
+      text += ", você tem a instalação pendente do rastreador.";
+      if (providerName) {
+        text += ` A oficina mais próxima de você é a ${providerName}`;
+        if (providerAddress) text += ` e fica no endereço ${providerAddress}`;
+      }
+      text += ". Compareça a oficina em até 5 dias.";
+
+      const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+      return `<a class="map-route-link whatsapp-link" href="${escapeAttribute(waUrl)}" target="_blank" rel="noreferrer noopener" title="Falar no WhatsApp">${whatsappSvgSmall}</a>`;
+    }
+
+    const whatsappSvgSmall = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+
+    function renderVehicleCell(row, col) {
+      if (col === vehicleRouteColumn) {
+        const origin = firstValue(row, ["Endereço", "endereco", "endereco_completo"]);
+        const href = buildGoogleMapsRouteUrl(origin, row["Prestador_1_Endereco"]);
+        if (!href) {
+          return "-";
+        }
+        return `<a class="map-route-link" href="${escapeAttribute(href)}" target="_blank" rel="noreferrer noopener">Ver no mapa</a>`;
+      }
+      if (col === vehicleWhatsAppColumn) {
+        return buildWhatsAppVehicleLink(row);
+      }
+
+      const value = getVehicleCellValue(row, col) || "-";
+
+      if (isAddressColumn(col) && value !== "-") {
+        return `<button type="button" class="vehicle-copy-text vehicle-cell-truncate" data-copy-value="${escapeAttribute(value)}" title="${escapeAttribute(value)}&#10;&#10;Clique para copiar">${escapeHtml(value)}</button>`;
+      }
+
+      if (col === "Tipo" || col === "tipo") {
+        const tipoColors = { Carro: "var(--accent)", Moto: "var(--accent-2)", Caminhão: "#7c5ba0" };
+        const dotColor = tipoColors[value] || "var(--muted)";
+        return `<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${dotColor};flex:none"></span>${escapeHtml(value)}</span>`;
+      }
+
+      return `<span class="vehicle-cell-truncate" title="${escapeAttribute(value)}">${escapeHtml(value)}</span>`;
+    }
+
+    function getVehicleCellValue(row, col) {
+      if (col === "Placa" || col === "placa") {
+        return normalizeCell(row["Placa"]) || normalizeCell(row["placa"]) || normalizeCell(row["Chassi"]) || normalizeCell(row["chassi"]);
+      }
+      return normalizeCell(row[col]);
+    }
+
+    async function copyTextToClipboard(value) {
+      if (!value) {
+        return;
+      }
+
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(value);
+          return;
+        }
+      } catch (error) {
+        console.warn("Falha ao copiar com clipboard API:", error);
+      }
+
+      const helper = document.createElement("textarea");
+      helper.value = value;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "absolute";
+      helper.style.left = "-9999px";
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand("copy");
+      document.body.removeChild(helper);
+    }
+
+    function applyAdaptiveTableLayout(table, columnCount, options = {}) {
+      const {
+        compactLimit = 0,
+        minWidth = "120px",
+      } = options;
+
+      table.className = columnCount > compactLimit
+        ? "adaptive-table-wide"
+        : "adaptive-table-compact";
+      table.style.setProperty("--table-col-count", String(columnCount));
+      table.style.setProperty("--table-col-min-width", minWidth);
+    }
+
+    function renderEmpty(message = "Aguardando dados do resultado final.") {
+      ids.providerChart.innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+      if (state.brazilMap) {
+        state.brazilMap.remove();
+        state.brazilMap = null;
+      }
+      ids.stateMap.innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+      ids.consultorChart.innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+      ids.regionalChart.innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+      ids.distanceChart.innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+      ids.providerTable.innerHTML = "";
+      ids.vehicleTable.innerHTML = "";
+      ids.kpiPlacas.textContent = "0";
+      ids.kpiPrestadores.textContent = "0";
+      ids.kpiEstados.textContent = "0";
+      ids.kpiTop1Share.textContent = "0%";
+      ids.kpiTop1Detail.textContent = "Participação do prestador líder no recorte atual.";
+      ids.providerChartMeta.textContent = "0 itens";
+      ids.stateChartMeta.textContent = "0 UFs";
+      ids.providerTableMeta.textContent = "0 linhas";
+      ids.vehicleTableMeta.textContent = "0 linhas";
+      state.vehicleVisibleColumns = [];
+      renderVehicleColumnSelector();
+    }
+
+    function toExcelHtml(rows, headers) {
+      const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Veiculos</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>\n`;
+      html += "    <tr>";
+      for (const h of headers) {
+        html += `<th>${esc(h)}</th>`;
+      }
+      html += "</tr>\n";
+      for (const row of rows) {
+        html += "    <tr>";
+        for (const h of headers) {
+          html += `<td>${esc(row[h] ?? "")}</td>`;
+        }
+        html += "</tr>\n";
+      }
+      html += "</table></body></html>";
+      return html;
+    }
+
+    function downloadExcel(html, filename) {
+      const blob = new Blob(["\uFEFF" + html], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportFilteredView() {
+      if (!state.filteredRows.length) {
+        return;
+      }
+      const xml = toExcelHtml(state.filteredRows, state.vehicleColumns);
+      downloadExcel(xml, `dashboard_completo_${timestamp()}.xls`);
+    }
+
+    function exportTableCsv() {
+      if (!state.filteredRows.length) {
+        return;
+      }
+      const cols = state.vehicleVisibleColumns.filter(
+        (c) => c !== vehicleRouteColumn && c !== vehicleWhatsAppColumn
+      );
+      const xml = toExcelHtml(state.filteredRows, cols);
+      downloadExcel(xml, `dashboard_tabela_${timestamp()}.xls`);
+    }
+
+    function exportPdfView() {
+      window.print();
+    }
+
+    async function exportImageView() {
+      if (typeof html2canvas !== "function") {
+        window.alert("Biblioteca de captura de imagem não disponível.");
+        return;
+      }
+
+      try {
+        const canvas = await html2canvas(document.body, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#f4efe8",
+          onclone: (doc) => {
+            const hidden = doc.querySelectorAll('[style*="display: none"], [hidden]');
+            hidden.forEach((el) => el.remove());
+          },
+        });
+
+        const link = document.createElement("a");
+        link.download = `dashboard_prestadores_${new Date().toISOString().split("T")[0]}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } catch (err) {
+        window.alert("Erro ao gerar imagem: " + err.message);
+      }
+    }
+
+    function rowFromHeaders(headers, values) {
+      const row = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] ?? "";
+      });
+      return row;
+    }
+
+    function firstValue(row, keys) {
+      for (const key of keys) {
+        const value = normalizeCell(row[key]);
+        if (value) {
+          return value;
+        }
+      }
+      return "";
+    }
+
+    function getVehicleState(row) {
+      return normalizeCell(firstValue(row, candidateStateColumns)) || extractUfFromAddress(normalizeCell(firstValue(row, ["Endereço", "endereco", "endereco_completo"])));
+    }
+
+    function extractUfFromAddress(address) {
+      const match = String(address || "").match(/,\s*([A-Z]{2})\s*(?:,\s*CEP)?[\s:]*\d/i);
+      return match ? match[1].toUpperCase() : "";
+    }
+
+    function parseNumber(value) {
+      if (value === null || value === undefined || value === "") {
+        return NaN;
+      }
+      let normalized = String(value).trim();
+      const hasDot = normalized.includes(".");
+      const hasComma = normalized.includes(",");
+
+      if (hasDot && hasComma) {
+        normalized = normalized.lastIndexOf(",") > normalized.lastIndexOf(".")
+          ? normalized.replace(/\./g, "").replace(/,/g, ".")
+          : normalized.replace(/,/g, "");
+      } else if (hasComma) {
+        normalized = normalized.replace(/,/g, ".");
+      }
+
+      normalized = normalized.replace(/[^0-9.-]/g, "");
+      return Number.parseFloat(normalized);
+    }
+
+    function normalizeCell(value) {
+      if (value === null || value === undefined) {
+        return "";
+      }
+      return String(value).trim();
+    }
+
+    function uniqueNonEmpty(values) {
+      return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    }
+
+    function formatNumber(value, decimals = 0) {
+      return Number(value || 0).toLocaleString("pt-BR", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+
+    function compareRows(a, b, key, direction) {
+      const leftRaw = getVehicleCellValue(a, key);
+      const rightRaw = getVehicleCellValue(b, key);
+
+      if (!leftRaw && !rightRaw) {
+        return 0;
+      }
+      if (!leftRaw) {
+        return 1;
+      }
+      if (!rightRaw) {
+        return -1;
+      }
+
+      const leftNumber = parseNumber(leftRaw);
+      const rightNumber = parseNumber(rightRaw);
+      let result;
+      if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+        result = leftNumber - rightNumber;
+      } else {
+        result = leftRaw.localeCompare(rightRaw, "pt-BR", { numeric: true, sensitivity: "base" });
+      }
+      return direction === "asc" ? result : -result;
+    }
+
+    function sortItems(items, key, direction, accessors) {
+      const accessor = accessors[key] || ((item) => item[key]);
+      return [...items].sort((a, b) => {
+        const left = accessor(a);
+        const right = accessor(b);
+        let result;
+        if (typeof left === "number" && typeof right === "number") {
+          result = left - right;
+        } else {
+          result = String(left || "").localeCompare(String(right || ""), "pt-BR", { numeric: true, sensitivity: "base" });
+        }
+        return direction === "asc" ? result : -result;
+      });
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let insideQuotes = false;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === '"') {
+          if (insideQuotes && next === '"') {
+            value += '"';
+            index += 1;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+          continue;
+        }
+
+        if (char === ',' && !insideQuotes) {
+          row.push(value);
+          value = "";
+          continue;
+        }
+
+        if ((char === '\n' || char === '\r') && !insideQuotes) {
+          if (char === '\r' && next === '\n') {
+            index += 1;
+          }
+          row.push(value);
+          if (!(row.length === 1 && row[0] === "")) {
+            rows.push(stripBomFromRow(row));
+          }
+          row = [];
+          value = "";
+          continue;
+        }
+
+        value += char;
+      }
+
+      if (value.length || row.length) {
+        row.push(value);
+        rows.push(stripBomFromRow(row));
+      }
+
+      return rows.filter((entry) => entry.some((cell) => String(cell).trim() !== ""));
+    }
+
+    function stripBomFromRow(row) {
+      if (!row.length) {
+        return row;
+      }
+      row[0] = String(row[0]).replace(/^\uFEFF/, "");
+      return row;
+    }
+
+    function timestamp() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}h${pad(now.getMinutes())}`;
+    }
+
+    function exportXmlView() {
+      if (!state.filteredRows.length) return;
+      const xml = toExcelHtml(state.filteredRows, state.vehicleColumns);
+      downloadExcel(xml, `veiculos_${timestamp()}.xls`);
+    }
+
+    function toCsv(rows, headers) {
+      const escape = (value) => {
+        const stringValue = normalizeCell(value);
+        if (/[",\n]/.test(stringValue)) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      return [
+        headers.map(escape).join(","),
+        ...rows.map((row) => headers.map((header) => escape(row[header])).join(",")),
+      ].join("\n");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/"/g, "&quot;");
+    }
+
+    function toggleProviderTable() {
+      const content = document.getElementById("providerTableContent");
+      const toggle = document.getElementById("providerTableToggle");
+      const isHidden = content.hasAttribute("hidden");
+
+      if (isHidden) {
+        content.removeAttribute("hidden");
+        toggle.setAttribute("aria-expanded", "true");
+      } else {
+        content.setAttribute("hidden", "");
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    }
+
+    document.addEventListener("click", (event) => {
+      const head = document.getElementById("providerTableHead");
+      const pill = document.getElementById("providerTableMeta");
+      if (head && head.contains(event.target) && !pill.contains(event.target)) {
+        toggleProviderTable();
+      }
+    });
+
+    async function loadBrazilStatesGeoJson() {
+      if (state.brazilStatesGeoJson) {
+        return state.brazilStatesGeoJson;
+      }
+
+      const response = await fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson");
+      if (!response.ok) {
+        throw new Error("Falha ao carregar o mapa dos estados do Brasil.");
+      }
+
+      state.brazilStatesGeoJson = await response.json();
+      return state.brazilStatesGeoJson;
+    }
+
+    function buildBrazilLegend(getColor, maxCount) {
+      const legend = L.control({ position: "bottomleft" });
+
+      legend.onAdd = function onAdd() {
+        const div = L.DomUtil.create("div", "map-legend");
+
+        if (maxCount <= 0) {
+          div.innerHTML = `<strong>Placas por UF</strong><div class="map-legend-scale"><div class="map-legend-item"><span class="map-legend-label">0</span><span class="map-legend-swatch" style="background:${getColor(0)}"></span></div></div>`;
+          return div;
+        }
+
+        const q1 = Math.max(1, Math.ceil(maxCount * 0.25));
+        const q2 = Math.max(1, Math.ceil(maxCount * 0.5));
+        const q3 = Math.max(1, Math.ceil(maxCount * 0.75));
+
+        const buckets = [
+          { label: "0", value: 0 },
+        ];
+
+        if (q1 > 1) {
+          buckets.push({ label: `1–${q1 - 1}`, value: Math.max(1, Math.floor((1 + q1 - 1) / 2)) });
+        }
+        buckets.push({ label: q2 > q1 ? `${q1}–${q2 - 1}` : `${q1}`, value: q1 });
+        buckets.push({ label: q3 > q2 ? `${q2}–${q3 - 1}` : `${q2}`, value: q2 });
+        buckets.push({ label: `${q3}+`, value: maxCount });
+
+        div.innerHTML = `
+          <strong>Placas por UF</strong>
+          <div class="map-legend-scale">
+            ${buckets.map((b) => `
+              <div class="map-legend-item">
+                <span class="map-legend-label">${b.label}</span>
+                <span class="map-legend-swatch" style="background:${getColor(b.value)}"></span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+        return div;
+      };
+
+      return legend;
+    }
+
+    function renderBrazilChart(stats, total) {
+      const container = document.getElementById("stateMapView");
+      container.className = "chart-list";
+      container.removeAttribute("style");
+      const items = stats.map((s) => ({ label: s.label, placas: s.placas }));
+
+      if (!items.length) {
+        container.innerHTML = '<div class="empty">Nenhum dado para exibir neste recorte.</div>';
+        return;
+      }
+
+      const max = Math.max(...items.map((item) => item.placas), 1);
+      const selectedStates = state.filterSelections.state;
+
+      container.innerHTML = items.map((item) => {
+        const percentOfMax = (item.placas / max) * 100;
+        const percentOfTotal = total ? (item.placas / total) * 100 : 0;
+        const isActive = selectedStates.includes(item.label);
+        return `
+          <div class="bar-row clickable${isActive ? ' filter-active' : ''}" data-chart-value="${escapeAttribute(item.label)}">
+            <div class="bar-label">${escapeHtml(item.label)}</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${percentOfMax}%"></div>
+            </div>
+            <div class="bar-value">${formatNumber(item.placas)} • ${formatNumber(percentOfTotal, 1)}%</div>
+          </div>
+        `;
+      }).join("");
+
+      container.querySelectorAll('.bar-row.clickable').forEach((row) => {
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const uf = row.dataset.chartValue;
+          const idx = state.filterSelections.state.indexOf(uf);
+          if (idx >= 0) {
+            state.filterSelections.state.splice(idx, 1);
+          } else {
+            state.filterSelections.state.push(uf);
+          }
+          state.filterSelections.state.sort((a, b) => a.localeCompare(b, "pt-BR"));
+          renderFilterMenu("state");
+          applyFilters();
+        });
+      });
+    }
+
+    async function renderBrazilMap(rows) {
+      const mapContainer = document.getElementById("stateMapView");
+      mapContainer.className = "map-container map-container--brazil";
+      mapContainer.innerHTML = '<div class="empty">Carregando mapa do Brasil...</div>';
+
+      const stateCount = {};
+      rows.forEach((row) => {
+        const uf = getVehicleState(row);
+        if (uf) {
+          stateCount[uf] = (stateCount[uf] || 0) + 1;
+        }
+      });
+
+      const counts = Object.values(stateCount);
+      const maxCount = counts.length ? Math.max(...counts) : 0;
+      const selectedStates = state.filterSelections.state;
+      const getColor = (count) => {
+        if (!count) return "#efe5d8";
+        const ratio = maxCount ? count / maxCount : 0;
+        if (ratio >= 0.75) return "#0d7a63";
+        if (ratio >= 0.5) return "#3b9a7f";
+        if (ratio >= 0.25) return "#7fbea8";
+        return "#c8e0d5";
+      };
+
+      try {
+        const geoJson = await loadBrazilStatesGeoJson();
+
+        if (state.brazilMap) {
+          state.brazilMap.remove();
+          state.brazilMap = null;
+        }
+
+        mapContainer.innerHTML = "";
+        const map = L.map(mapContainer, {
+          zoomControl: true,
+          attributionControl: false,
+          dragging: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true,
+          boxZoom: true,
+          keyboard: true,
+          touchZoom: true,
+          zoomSnap: 0.25,
+          zoomDelta: 0.5,
+        });
+
+        state.brazilMap = map;
+
+        const layer = L.geoJSON(geoJson, {
+          style: (feature) => {
+            const code = feature.properties.sigla || feature.properties.code || feature.properties.uf;
+            const count = stateCount[code] || 0;
+            const isSelected = selectedStates.includes(code);
+            return {
+              fillColor: getColor(count),
+              weight: isSelected ? 2.8 : 1.2,
+              opacity: 1,
+              color: isSelected ? "#5e5143" : "#f8f3eb",
+              fillOpacity: 0.95,
+            };
+          },
+          onEachFeature: (feature, layerRef) => {
+            const code = feature.properties.sigla || feature.properties.code || feature.properties.uf;
+            const name = feature.properties.name || feature.properties.nome || code;
+            const count = stateCount[code] || 0;
+            layerRef.bindTooltip(`${name} (${code})<br>${formatNumber(count)} placa${count === 1 ? "" : "s"}`, {
+              sticky: true,
+              direction: "auto",
+            });
+
+            layerRef.on("mouseover", () => {
+              layerRef.setStyle({ weight: selectedStates.includes(code) ? 2.8 : 2.2, color: "#5e5143" });
+            });
+
+            layerRef.on("mouseout", () => {
+              layerRef.setStyle({ weight: selectedStates.includes(code) ? 2.8 : 1.2, color: selectedStates.includes(code) ? "#5e5143" : "#f8f3eb" });
+            });
+
+            layerRef.on("click", () => {
+              if (state.filterSelections.state.includes(code)) {
+                state.filterSelections.state = state.filterSelections.state.filter((value) => value !== code);
+              } else {
+                state.filterSelections.state = [...state.filterSelections.state, code].sort((a, b) => a.localeCompare(b, "pt-BR"));
+              }
+              renderFilterMenu("state");
+              applyFilters();
+            });
+          },
+        }).addTo(map);
+
+        map.fitBounds(layer.getBounds(), { padding: [2, 2, 2, 42] });
+        map.setZoom(map.getZoom() + 0.25);
+        buildBrazilLegend(getColor, maxCount).addTo(map);
+      } catch (error) {
+        mapContainer.innerHTML = `<div class="empty">${escapeHtml(error.message || "Nao foi possivel carregar o mapa do Brasil.")}</div>`;
+      }
+    }
+    function enableColumnResize(table) {
+      if (!table) return;
+      const ths = table.querySelectorAll("th");
+      ths.forEach((th) => {
+        const handle = document.createElement("div");
+        handle.className = "resize-handle";
+        th.style.position = "relative";
+        th.appendChild(handle);
+
+        let isResizing = false;
+        let startX, startWidth;
+
+        handle.addEventListener("mousedown", (e) => {
+          isResizing = true;
+          startX = e.clientX;
+          startWidth = th.getBoundingClientRect().width;
+          handle.classList.add("resizing");
+          document.body.style.cursor = "col-resize";
+          document.body.style.userSelect = "none";
+          e.preventDefault();
+          e.stopPropagation();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+          if (!isResizing) return;
+          const diff = e.clientX - startX;
+          const newWidth = Math.max(50, startWidth + diff);
+          const colIndex = Array.from(th.parentElement.children).indexOf(th);
+          table.querySelectorAll("tr").forEach((tr) => {
+            const cell = tr.children[colIndex];
+            if (cell) {
+              cell.style.width = newWidth + "px";
+              cell.style.minWidth = newWidth + "px";
+              cell.style.maxWidth = newWidth + "px";
+            }
+          });
+        });
+
+        document.addEventListener("mouseup", () => {
+          if (!isResizing) return;
+          isResizing = false;
+          handle.classList.remove("resizing");
+          document.body.style.cursor = "";
+          document.body.style.userSelect = "";
+        });
+      });
+    }
+  </script>
+</body>
+</html>
