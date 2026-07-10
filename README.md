@@ -708,3 +708,9 @@ git push origin main
 |---|---|
 | Código fonte | https://github.com/Indianara/tato-projects |
 | Site publicado | https://indianara.github.io/tato-projects/ |
+
+
+cd /Users/indianarasantos/Documents/Developments/Extensions/PrestadorMaisProximo && \
+git add -A && \
+git commit -m "atualizacao- Abrir site automaticamente $(date '+%Y-%m-%d')" && \
+git push origin main
