@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 .env
 cache/
-output/
+/output/
 .DS_Store
 *.egg-info/
 
