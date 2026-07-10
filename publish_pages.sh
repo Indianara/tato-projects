@@ -16,5 +16,8 @@ else
   echo "Publicado com sucesso!"
 fi
 
+URL="https://indianara.github.io/tato-projects/"
 echo ""
-echo "URL: https://indianara.github.io/tato-projects/"
+echo "URL: $URL"
+echo "Abrindo site no navegador..."
+open "$URL"
