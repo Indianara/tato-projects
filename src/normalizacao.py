@@ -8,6 +8,7 @@ Lê os CSVs de entrada e produz CSVs padronizados com:
     bairro, cidade, estado, CEP)
   - Colunas mapeadas para nomes canônicos
 """
+from __future__ import annotations
 
 import re
 from pathlib import Path

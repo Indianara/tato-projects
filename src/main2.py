@@ -5,6 +5,7 @@ Main 2.0 — Pipeline completo: normalização → geocoding → distâncias.
 Uso:
   python3 src/main2.py
 """
+from __future__ import annotations
 
 import csv
 import json

@@ -9,6 +9,7 @@ Validações:
   - Coordenadas dentro do Brasil (bounding box)
   - Estado da coordenada coincide com o estado esperado do CSV
 """
+from __future__ import annotations
 
 import json
 import re

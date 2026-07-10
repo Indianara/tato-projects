@@ -5,6 +5,7 @@ Etapa 1 — Haversine: distância em linha reta (rápido, sem API).
 Etapa 2 — OSRM: distância real por estradas (API pública gratuita).
            Usado apenas para os top N candidatos do Haversine, minimizando chamadas.
 """
+from __future__ import annotations
 
 import math
 import time
