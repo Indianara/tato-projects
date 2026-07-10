@@ -17,4 +17,4 @@ else
 fi
 
 echo ""
-echo "URL: https://indianaralopess.github.io/tato-projects/"
+echo "URL: https://indianara.github.io/tato-projects/"
