@@ -6,6 +6,10 @@ cd "$(dirname "$0")"
 echo "Preparando arquivos do site..."
 ./prepare_pages.sh
 
+# Garante config git para o commit funcionar mesmo sem config global
+git config user.name >/dev/null 2>&1 || git config user.name "Prestador Mais Proximo"
+git config user.email >/dev/null 2>&1 || git config user.email "prestador@maisproximo.app"
+
 echo "Publicando no GitHub Pages..."
 git add docs/
 if git diff --cached --quiet; then
